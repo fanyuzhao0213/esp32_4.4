@@ -39,10 +39,10 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("G:/esp32S3/lvgl-cst328-ST7789/build/esp-idf/mbedtls/mbedtls/include/cmake_install.cmake")
-  include("G:/esp32S3/lvgl-cst328-ST7789/build/esp-idf/mbedtls/mbedtls/3rdparty/cmake_install.cmake")
-  include("G:/esp32S3/lvgl-cst328-ST7789/build/esp-idf/mbedtls/mbedtls/library/cmake_install.cmake")
-  include("G:/esp32S3/lvgl-cst328-ST7789/build/esp-idf/mbedtls/mbedtls/pkgconfig/cmake_install.cmake")
+  include("G:/esp32S3/esp32_lvgl_4.4/build/esp-idf/mbedtls/mbedtls/include/cmake_install.cmake")
+  include("G:/esp32S3/esp32_lvgl_4.4/build/esp-idf/mbedtls/mbedtls/3rdparty/cmake_install.cmake")
+  include("G:/esp32S3/esp32_lvgl_4.4/build/esp-idf/mbedtls/mbedtls/library/cmake_install.cmake")
+  include("G:/esp32S3/esp32_lvgl_4.4/build/esp-idf/mbedtls/mbedtls/pkgconfig/cmake_install.cmake")
 
 endif()
 

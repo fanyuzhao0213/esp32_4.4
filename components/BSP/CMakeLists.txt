@@ -3,14 +3,18 @@ set(src_dirs
             KEY
             ESPTIM
             PWM
-            UART)
+            UART
+            WIFI
+            WEATHER)
 
 set(include_dirs
             LED
             KEY
             ESPTIM
             PWM
-            UART)
+            UART
+            WIFI
+            WEATHER)
 
 set(requires
             driver

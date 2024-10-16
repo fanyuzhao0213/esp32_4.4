@@ -4,8 +4,8 @@
     "project_version":    "v4.4.8",
     "project_path":       "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader/subproject",
     "idf_path":           "F:/esp_idf_4.4.8/v4.4.8/esp-idf",
-    "build_dir":          "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader",
-    "config_file":        "G:/esp32S3/lvgl-cst328-ST7789/sdkconfig",
+    "build_dir":          "G:/esp32S3/esp32_lvgl_4.4/build/bootloader",
+    "config_file":        "G:/esp32S3/esp32_lvgl_4.4/sdkconfig",
     "config_defaults":    "",
     "app_elf":            "bootloader.elf",
     "app_bin":            "bootloader.bin",
@@ -52,7 +52,7 @@
             "priv_reqs": [ "micro-ecc", "spi_flash", "efuse", "hal" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/bootloader_support/libbootloader_support.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/bootloader_support/libbootloader_support.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_common.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_common_loader.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_clock_init.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_flash.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_mem.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_random.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_random_esp32s3.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_utility.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/esp_image_format.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/flash_encrypt.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/secure_boot.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/flash_partitions.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/flash_qio_mode.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_flash_config_esp32s3.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_efuse.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_init.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_clock_loader.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_console.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_console_loader.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/bootloader_panic.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/esp32s3/bootloader_sha.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/esp32s3/bootloader_soc.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader_support/src/esp32s3/bootloader_esp32s3.c" ],
             "include_dirs": [ "include", "include_bootloader" ]
         },
@@ -67,7 +67,7 @@
             "priv_reqs": [ "bootloader_support", "soc", "spi_flash" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/efuse/libefuse.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/efuse/libefuse.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/esp32s3/esp_efuse_table.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/esp32s3/esp_efuse_fields.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/esp32s3/esp_efuse_rtc_calib.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/esp32s3/esp_efuse_utility.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/src/esp_efuse_api.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/src/esp_efuse_fields.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/src/esp_efuse_utility.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/efuse/src/esp_efuse_api_key_esp32xx.c" ],
             "include_dirs": [ "include", "esp32s3/include" ]
         },
@@ -97,7 +97,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/esp_common/libesp_common.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/esp_common/libesp_common.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_common/src/esp_err_to_name.c" ],
             "include_dirs": [ "include" ]
         },
@@ -112,7 +112,7 @@
             "priv_reqs": [ "efuse", "bootloader_support", "spi_flash", "esp_system" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/esp_hw_support/libesp_hw_support.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/esp_hw_support/libesp_hw_support.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/compare_set.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/cpu_util.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_clk.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_clk_init.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_init.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_pm.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_sleep.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_time.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/rtc_wdt.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_hw_support/port/esp32s3/chip_info.c" ],
             "include_dirs": [ "include", "include/soc", "include/soc/esp32s3" ]
         },
@@ -127,7 +127,7 @@
             "priv_reqs": [ "soc", "hal", "efuse" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/esp_rom/libesp_rom.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/esp_rom/libesp_rom.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_crc.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_sys.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_uart.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_tjpgd.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_efuse.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_longjmp.S", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_cache.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_cache_writeback_esp32s3.S", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_rom/patches/esp_rom_mmap.c" ],
             "include_dirs": [ "include", "include/esp32s3", "esp32s3" ]
         },
@@ -142,7 +142,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/esp_system/libesp_system.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/esp_system/libesp_system.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/esp_system/esp_err.c" ],
             "include_dirs": []
         },
@@ -187,7 +187,7 @@
             "priv_reqs": [ "esp32s3" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/hal/libhal.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/hal/libhal.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/hal/wdt_hal_iram.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/hal/mpu_hal.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/hal/cpu_hal.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/hal/efuse_hal.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/hal/esp32s3/efuse_hal.c" ],
             "include_dirs": [ "esp32s3/include", "include", "platform_port/include" ]
         },
@@ -202,7 +202,7 @@
             "priv_reqs": [ "soc" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/log/liblog.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/log/liblog.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/log/log.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/log/log_buffers.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/log/log_noos.c" ],
             "include_dirs": [ "include" ]
         },
@@ -217,7 +217,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/main/libmain.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/main/libmain.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader/subproject/main/bootloader_start.c" ],
             "include_dirs": []
         },
@@ -232,7 +232,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/micro-ecc/libmicro-ecc.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/micro-ecc/libmicro-ecc.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/bootloader/subproject/components/micro-ecc/uECC_verify_antifault.c" ],
             "include_dirs": [ ".", "micro-ecc" ]
         },
@@ -277,7 +277,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/soc/libsoc.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/soc/libsoc.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/lldesc.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/soc_include_legacy_warn.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/adc_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/dedic_gpio_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/gdma_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/gpio_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/i2c_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/i2s_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/interrupts.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/lcd_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/ledc_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/mcpwm_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/pcnt_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/rmt_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/rtc_io_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/sdio_slave_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/sdmmc_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/sigmadelta_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/spi_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/timer_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/touch_sensor_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/uart_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/usb_periph.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/soc/esp32s3/usb_phy_periph.c" ],
             "include_dirs": [ "include" ]
         },
@@ -292,7 +292,7 @@
             "priv_reqs": [ "bootloader_support", "soc" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/spi_flash/libspi_flash.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/spi_flash/libspi_flash.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/spi_flash/esp32s3/spi_flash_rom_patch.c" ],
             "include_dirs": [ "include" ]
         },
@@ -307,7 +307,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/xtensa/libxtensa.a",
+            "file": "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/xtensa/libxtensa.a",
             "sources": [ "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/xtensa/eri.c", "F:/esp_idf_4.4.8/v4.4.8/esp-idf/components/xtensa/xt_trax.c" ],
             "include_dirs": [ "include", "esp32s3/include" ]
         }

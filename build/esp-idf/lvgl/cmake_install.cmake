@@ -1,4 +1,4 @@
-# Install script for directory: G:/esp32S3/lvgl-cst328-ST7789/components/lvgl
+# Install script for directory: G:/esp32S3/esp32_lvgl_4.4/components/lvgl
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

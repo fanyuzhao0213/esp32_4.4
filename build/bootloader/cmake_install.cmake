@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/esp-idf/cmake_install.cmake")
+  include("G:/esp32S3/esp32_lvgl_4.4/build/bootloader/esp-idf/cmake_install.cmake")
 
 endif()
 
@@ -51,5 +51,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "G:/esp32S3/lvgl-cst328-ST7789/build/bootloader/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "G:/esp32S3/esp32_lvgl_4.4/build/bootloader/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

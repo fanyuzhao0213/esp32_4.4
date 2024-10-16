@@ -98,7 +98,7 @@ bool cst328_read(lv_indev_drv_t *drv, lv_indev_data_t *data) {
 
     cst328_i2c_read(cst328_status.i2c_dev_addr, ESP_LCD_TOUCH_CST328_READ_Number_REG, data_buf, 1); // 读取触控数量
     touch_pnt_cnt = data_buf[0] & 0x0F;
-    ESP_LOGI(TAG, "touchnum:%d", touch_pnt_cnt);
+    // ESP_LOGI(TAG, "touchnum:%d", touch_pnt_cnt);
     if (touch_pnt_cnt != 1){ // ignore no touch & multi touch
         data->point.x = last_x;
         data->point.y = last_y;
@@ -109,7 +109,7 @@ bool cst328_read(lv_indev_drv_t *drv, lv_indev_data_t *data) {
 
     cst328_i2c_read(cst328_status.i2c_dev_addr, ESP_LCD_TOUCH_CST328_READ_XY_REG + 1, &data_buf[0], 3); // 只取第一个通道的坐标
     cst328_i2c_write(cst328_status.i2c_dev_addr, ESP_LCD_TOUCH_CST328_READ_Number_REG, (uint8_t *)&clear, 1);
-    
+
     last_x = (uint16_t)(((uint16_t)data_buf[0] << 4) + ((data_buf[2] & 0xF0)>> 4));
     last_y = (uint16_t)(((uint16_t)data_buf[1] << 4) + (data_buf[2] & 0x0F));
 
