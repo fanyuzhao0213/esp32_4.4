@@ -15,6 +15,7 @@
 #include "freertos/event_groups.h"
 #include "weather.h"
 #include "simple_wifi_sta.h"
+#include  "mqtt.h"
 
 /*********************
  *      DEFINES
@@ -98,6 +99,7 @@ void wifi_init(void)
     {
         //获取weather 任务启动
         //start http  task
+        mqtt_start();
 		xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
     }
 }

@@ -5,7 +5,8 @@ set(src_dirs
             PWM
             UART
             WIFI
-            WEATHER)
+            WEATHER
+            MQTT)
 
 set(include_dirs
             LED
@@ -14,7 +15,8 @@ set(include_dirs
             PWM
             UART
             WIFI
-            WEATHER)
+            WEATHER
+            MQTT)
 
 set(requires
             driver
