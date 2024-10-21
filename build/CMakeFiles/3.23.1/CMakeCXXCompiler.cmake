@@ -1,4 +1,4 @@
-set(CMAKE_CXX_COMPILER "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-g++.exe")
+set(CMAKE_CXX_COMPILER "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-g++.exe")
 set(CMAKE_CXX_COMPILER_ARG1 "")
 set(CMAKE_CXX_COMPILER_ID "GNU")
 set(CMAKE_CXX_COMPILER_VERSION "8.4.0")
@@ -22,11 +22,11 @@ set(CMAKE_CXX_SIMULATE_VERSION "")
 
 
 
-set(CMAKE_AR "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ar.exe")
-set(CMAKE_CXX_COMPILER_AR "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gcc-ar.exe")
-set(CMAKE_RANLIB "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ranlib.exe")
-set(CMAKE_CXX_COMPILER_RANLIB "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gcc-ranlib.exe")
-set(CMAKE_LINKER "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ld.exe")
+set(CMAKE_AR "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ar.exe")
+set(CMAKE_CXX_COMPILER_AR "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gcc-ar.exe")
+set(CMAKE_RANLIB "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ranlib.exe")
+set(CMAKE_CXX_COMPILER_RANLIB "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gcc-ranlib.exe")
+set(CMAKE_LINKER "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-ld.exe")
 set(CMAKE_MT "")
 set(CMAKE_COMPILER_IS_GNUCXX 1)
 set(CMAKE_CXX_COMPILER_LOADED 1)
@@ -77,7 +77,7 @@ endif()
 
 
 
-set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0/xtensa-esp32s3-elf;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0/backward;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0/include;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0/include-fixed;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/sys-include;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include")
+set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0/xtensa-esp32s3-elf;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include/c++/8.4.0/backward;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0/include;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0/include-fixed;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/sys-include;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/include")
 set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;m;gcc;c;nosys;c;gcc")
-set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc;F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/lib")
+set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc/xtensa-esp32s3-elf/8.4.0;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/lib/gcc;E:/esp_idf_v4.4/tool/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/xtensa-esp32s3-elf/lib")
 set(CMAKE_CXX_IMPLICIT_LINK_FRAMEWORK_DIRECTORIES "")

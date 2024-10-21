@@ -14,8 +14,8 @@
 #include "wifi_smartconfig.h"
 
 //需要把这两个修改成你家WIFI，测试是否连接成功
-#define DEFAULT_WIFI_SSID           "TPP"
-#define DEFAULT_WIFI_PASSWORD       "td88888888"
+#define DEFAULT_WIFI_SSID           "Gentech"
+#define DEFAULT_WIFI_PASSWORD       "1234567890"
 
 static const char *TAG = "wifi";
 

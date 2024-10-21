@@ -20,8 +20,8 @@
  *      DEFINES
  *********************/
 #define LVGL_TASK_STACK_SIZE   (4 * 1024)   // 定义LVGL任务的堆栈大小（字节）
-#define LVGL_TASK_PRIORITY     5            // 定义LVGL任务的优先级
-#define LV_TICK_PERIOD_MS      1           // 心跳周期为10ms
+#define LVGL_TASK_PRIORITY     6            // 定义LVGL任务的优先级
+#define LV_TICK_PERIOD_MS      1           // 心跳周期为1ms
 
 EventGroupHandle_t g_event_group;        /* 定义事件组 */
 
@@ -144,5 +144,5 @@ void app_main(void)
     print_chip_info();
     wifi_init();
     // 创建LVGL任务
-    xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
+    // xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
 }
