@@ -6,7 +6,9 @@ set(src_dirs
             UART
             WIFI
             WEATHER
-            MQTT)
+            MQTT
+            IIC
+            QMI8658)
 
 set(include_dirs
             LED
@@ -16,7 +18,9 @@ set(include_dirs
             UART
             WIFI
             WEATHER
-            MQTT)
+            MQTT
+            IIC
+            QMI8658)
 
 set(requires
             driver

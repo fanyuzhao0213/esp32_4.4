@@ -16,6 +16,9 @@
 #include "weather.h"
 #include "simple_wifi_sta.h"
 #include  "mqtt.h"
+#include "iic.h"
+#include "QMI8658.h"
+
 
 /*********************
  *      DEFINES
@@ -140,11 +143,44 @@ static void lvgl_task(void *arg)
  *   APPLICATION MAIN
  **********************/
 
+i2c_obj_t i2c1_master;
+
 void app_main(void)
 {
     // 打印芯片信息和重启原因
     print_chip_info();
+    esp_err_t ret = i2c_master_init();
+    if (ret != ESP_OK) {
+        // 处理初始化失败的情况
+        printf("Failed to initialize I2C: %s", esp_err_to_name(ret));
+        return;
+    }
+    // QMI8658C_ReadDev_Identifier();
+    // QMI8658C_ReadDev_RevisionID();
+    // 初始化 QMI8658C 寄存器
+    if (QMI8658C_Reg_Init() == 0) {
+        printf("QMI8658C 寄存器初始化失败");
+        return; // 终止执行
+    }
     wifi_init();
     // 创建LVGL任务
     // xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
+        while (1) {
+        // 获取加速度计数据
+        short ax = QMI8658C_Get_AX();
+        short ay = QMI8658C_Get_AY();
+        short az = QMI8658C_Get_AZ();
+
+        // 获取陀螺仪数据
+        short gx = QMI8658C_Get_GX();
+        short gy = QMI8658C_Get_GY();
+        short gz = QMI8658C_Get_GZ();
+
+        // 打印读取到的数据
+        ESP_LOGI("QMI8658C", "加速度: X=%d, Y=%d, Z=%d", ax, ay, az);
+        ESP_LOGI("QMI8658C", "陀螺仪: X=%d, Y=%d, Z=%d", gx, gy, gz);
+
+        // 延时1秒
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
