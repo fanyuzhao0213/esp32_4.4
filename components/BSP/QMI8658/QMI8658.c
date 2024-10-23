@@ -3,7 +3,9 @@
 
 QMI8658C_Data QMI8658C_AGM = {0};
 static const char *TAG = "QMI8658C"; // 定义日志标签
-#include "QMI8658.h"
+int16_t ax_offset = 0, ay_offset = 0, az_offset = 0;
+int16_t gx_offset = 0, gy_offset = 0, gz_offset = 0;
+
 
 // I2C 初始化函数
 esp_err_t i2c_master_init(void) {
@@ -28,29 +30,95 @@ esp_err_t i2c_master_init(void) {
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C driver installation failed: %s", esp_err_to_name(err));
         return err;  // 返回错误
-    }
+	}
 
-    ESP_LOGI(TAG, "I2C master initialized successfully");  // 成功初始化信息
+	ESP_LOGI(TAG, "I2C master initialized successfully");  // 成功初始化信息
     return ESP_OK;  // 返回成功
 }
 
+void QMI8658C_WriteReg(uint8_t reg_add, uint8_t reg_dat)
+{
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();  // 创建 I2C 命令句柄
 
+    // 开始 I2C 通信
+    i2c_master_start(cmd);
 
-void QMI8658C_WriteReg(uint8_t reg_add, uint8_t reg_dat) {
-    // 设置 I2C 设备地址和要写入的数据
-    uint8_t data[2] = {reg_add, reg_dat};
-    i2c_master_write_to_device(I2C_MASTER_NUM, QMI8658C_I2C_Add, data, sizeof(data), 1000 / portTICK_PERIOD_MS);
+    // 写入设备地址和寄存器地址
+    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_add, ACK_CHECK_EN);
+
+    // 写入数据
+    i2c_master_write_byte(cmd, reg_dat, ACK_CHECK_EN);
+
+    i2c_master_stop(cmd);  // 停止 I2C 通信
+
+    // 执行命令
+    esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(I2C_MASTER_TIMEOUT_MS));
+    if (ret != ESP_OK) {
+        ESP_LOGE("QMI8658C", "I2C write failed: %s", esp_err_to_name(ret));
+    }
+
+    i2c_cmd_link_delete(cmd);  // 删除命令句柄
 }
 
-uint8_t QMI8658C_ReadData(uint8_t reg_add) {
-    uint8_t data;
-    // 写入寄存器地址以便读取数据
-    i2c_master_write_to_device(I2C_MASTER_NUM, QMI8658C_I2C_Add, &reg_add, 1, 1000 / portTICK_PERIOD_MS);
-    // 读取数据
-    i2c_master_read_from_device(I2C_MASTER_NUM, QMI8658C_I2C_Add, &data, 1, 1000 / portTICK_PERIOD_MS);
+uint8_t QMI8658C_ReadData(uint8_t reg_add)
+{
+    uint8_t data = 0;
+
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();  // 创建 I2C 命令句柄
+
+    // 开始 I2C 通信，发送寄存器地址
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_add, ACK_CHECK_EN);
+
+    // 再次启动 I2C 通信，读数据
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_READ, ACK_CHECK_EN);
+    i2c_master_read_byte(cmd, &data, I2C_MASTER_NACK);
+
+    i2c_master_stop(cmd);  // 停止 I2C 通信
+
+    // 执行命令
+    esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(I2C_MASTER_TIMEOUT_MS));
+    if (ret != ESP_OK) {
+        ESP_LOGE("QMI8658C", "I2C read failed: %s", esp_err_to_name(ret));
+    }
+
+    i2c_cmd_link_delete(cmd);  // 删除命令句柄
+
     return data;
 }
 
+
+void QMI8658C_Calibrate(void)
+{
+    int32_t ax_sum = 0, ay_sum = 0, az_sum = 0;
+    int32_t gx_sum = 0, gy_sum = 0, gz_sum = 0;
+
+    for (int i = 0; i < 100; i++) {
+        ax_sum += QMI8658C_Get_AX();
+        ay_sum += QMI8658C_Get_AY();
+        az_sum += QMI8658C_Get_AZ();
+        
+        gx_sum += QMI8658C_Get_GX();
+        gy_sum += QMI8658C_Get_GY();
+        gz_sum += QMI8658C_Get_GZ();
+        
+        vTaskDelay(pdMS_TO_TICKS(10)); // 延时 10ms
+    }
+
+    ax_offset = ax_sum / 100;
+    ay_offset = ay_sum / 100;
+	az_sum = az_sum - 1000 * 100;
+    az_offset = az_sum / 100;
+
+    gx_offset = gx_sum / 100;
+    gy_offset = gy_sum / 100;
+    gz_offset = gz_sum / 100;
+	ESP_LOGI("QMI8658C", "	ax_offset: %d,ay_offset: %d,az_offset: %d,gx_offset: %d,gy_offset: %d,gz_offset: %d",\
+			ax_offset,ay_offset,az_offset,gx_offset,gy_offset,gz_offset);
+}
 
 /**********************************************************************************************************
 *	函 数 名: QMI8658C_Reg_Init
@@ -60,6 +128,12 @@ uint8_t QMI8658C_ReadData(uint8_t reg_add) {
 **********************************************************************************************************/
 uint8_t QMI8658C_Reg_Init(void)
 {
+	esp_err_t ret = i2c_master_init();
+    if (ret != ESP_OK) {
+        // 处理初始化失败的情况
+        printf("Failed to initialize I2C: %s", esp_err_to_name(ret));
+        return;
+    }
 	if(QMI8658C_ReadDev_Identifier() == 1 && QMI8658C_ReadDev_RevisionID() == 1)
 	{
 		QMI8658C_Set_CTRL1();
@@ -68,8 +142,11 @@ uint8_t QMI8658C_Reg_Init(void)
 		QMI8658C_Set_CTRL3();
 		QMI8658C_Set_CTRL4();
 		QMI8658C_Set_CTRL5();
+		//校准
+		QMI8658C_Calibrate();
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -79,17 +156,17 @@ uint8_t QMI8658C_Reg_Init(void)
 *	形	  参: 无
 *	返 回 值: Device identifier是否正确
 **********************************************************************************************************/
-
 uint8_t QMI8658C_ReadDev_Identifier(void)
 {
-    uint8_t device_id = QMI8658C_ReadData(QMI8658C_RegAdd_WHO_AM_I); // 读取设备标识符
-    ESP_LOGI(TAG, "Read Device Identifier: 0x%02X", device_id); // 打印读取到的设备标识符
-
-    if (device_id == 0x05) { // 设备标识符 0x05 | 0xA0
-        ESP_LOGI(TAG, "Device identifier matched: 0x05"); // 设备匹配成功的日志
+    uint8_t identifier = QMI8658C_ReadData(QMI8658C_RegAdd_WHO_AM_I);
+    if (identifier == 0x05) // Device identifier should be 0x05
+    {
+        ESP_LOGI("QMI8658C", "Device identifier is correct: 0x%02X", identifier);
         return 1;
-    } else {
-        ESP_LOGE(TAG, "Device identifier mismatch: expected 0x05, got 0x%02X", device_id); // 设备不匹配的日志
+    }
+    else
+    {
+        ESP_LOGE("QMI8658C", "Device identifier mismatch: 0x%02X (expected 0x05)", identifier);
         return 0;
     }
 }
@@ -102,17 +179,20 @@ uint8_t QMI8658C_ReadDev_Identifier(void)
 **********************************************************************************************************/
 uint8_t QMI8658C_ReadDev_RevisionID(void)
 {
-    uint8_t revision_id = QMI8658C_ReadData(QMI8658C_RegAdd_REVISION_ID);  // 读取修订 ID
-    ESP_LOGI(TAG, "读取的修订 ID: 0x%02X", revision_id);  // 打印读取的修订 ID
-
-    if (revision_id == 0x7B || revision_id == 0x7C) {  // 如果设备修订 ID 为 0x7B
-        ESP_LOGI(TAG, "设备修订 ID 正确: 0x7B");  // 打印成功信息
-        return 1;  // 返回 1 表示修订 ID 正确
-    } else {
-        ESP_LOGE(TAG, "设备修订 ID 错误: 期望 0x7B, 实际 0x%02X", revision_id);  // 打印错误信息
-        return 0;  // 返回 0 表示修订 ID 错误
+    uint8_t revision_id = QMI8658C_ReadData(QMI8658C_RegAdd_REVISION_ID);
+    if (revision_id == 0x7B || revision_id == 0x7c) // Device Revision ID should be 0x7B
+    {
+        ESP_LOGI("QMI8658C", "Revision ID is correct: 0x%02X", revision_id);
+        return 1;
+    }
+    else
+    {
+        ESP_LOGE("QMI8658C", "Revision ID mismatch: 0x%02X (expected 0x7B)", revision_id);
+        return 0;
     }
 }
+
+
 /**********************************************************************************************************
 *	函 数 名: QMI8658C_Set_CTRL1
 *	功能说明: 配置CTRL1寄存器，控制电源状态，配置SPI通信
@@ -121,7 +201,7 @@ uint8_t QMI8658C_ReadDev_RevisionID(void)
 **********************************************************************************************************/
 void QMI8658C_Set_CTRL1(void)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL1, 0x41);
+	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL1, 0x20);//四线SPI，大端读取，使能内部2M晶振
 }
 
 /**********************************************************************************************************
@@ -132,7 +212,7 @@ void QMI8658C_Set_CTRL1(void)
 **********************************************************************************************************/
 void QMI8658C_Set_CTRL2(void)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL2, 0x34);//加速度计自检，±16g，500Hz采样
+	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL2, 0xB4);//加速度计自检，±16g，500Hz采样
 }
 
 /**********************************************************************************************************
@@ -143,7 +223,7 @@ void QMI8658C_Set_CTRL2(void)
 **********************************************************************************************************/
 void QMI8658C_Set_CTRL3(void)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL3, 0xD4);//陀螺仪自检，±128dps，500Hz采样
+	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL3, 0xB4);//陀螺仪自检，±128dps，500Hz采样
 }
 
 /**********************************************************************************************************
@@ -165,7 +245,7 @@ void QMI8658C_Set_CTRL4(void)
 **********************************************************************************************************/
 void QMI8658C_Set_CTRL5(void)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL5, 0x00);//不使能陀螺仪、加速度计的低通滤波
+	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL5, 0x77);//不使能陀螺仪、加速度计的低通滤波
 }
 
 /**********************************************************************************************************
@@ -187,7 +267,7 @@ void QMI8658C_Set_CTRL6(void)
 **********************************************************************************************************/
 void QMI8658C_Set_CTRL7(void)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL7, 0x07);//使能陀螺仪、加速度计
+	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL7, 0x03);//使能陀螺仪、加速度计
 }
 
 /**********************************************************************************************************

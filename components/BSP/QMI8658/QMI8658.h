@@ -6,6 +6,24 @@
 #include <stdio.h>
 #include <string.h>
 
+#define I2C_MASTER_TIMEOUT_MS 1000     // I2C 通信超时 1000ms
+
+
+#define I2C_MASTER_SCL_IO           10        // I2C SCL 引脚
+#define I2C_MASTER_SDA_IO           11        // I2C SDA 引脚
+#define I2C_MASTER_NUM              1 			// I2C 端口号
+#define I2C_MASTER_FREQ_HZ          100000    // I2C 频率
+#define I2C_MASTER_TX_BUF_DISABLE   0         // 禁用 TX 缓冲区
+#define I2C_MASTER_RX_BUF_DISABLE   0         // 禁用 RX 缓冲区
+// 定义 ACK 检查
+#define ACK_CHECK_EN  true  // 启用 ACK 检查
+#define ACK_CHECK_DIS false // 禁用 ACK 检查
+
+#define QMI8658C_I2C_Add 0x6B  			// QMI8658C 的 I2C 地址
+
+extern int16_t ax_offset, ay_offset, az_offset;
+extern int16_t gx_offset, gy_offset, gz_offset;
+
 typedef unsigned char	u8;
 typedef unsigned short	u16;
 typedef unsigned int	u32;
@@ -14,16 +32,6 @@ typedef unsigned char	uint8_t;
 typedef unsigned short	uint16_t;
 typedef unsigned int	uint32_t;
 
-#define I2C_MASTER_SCL_IO           10        // I2C SCL 引脚
-#define I2C_MASTER_SDA_IO           11        // I2C SDA 引脚
-#define I2C_MASTER_NUM              1 // I2C 端口号
-#define I2C_MASTER_FREQ_HZ          100000    // I2C 频率
-#define I2C_MASTER_TX_BUF_DISABLE   0         // 禁用 TX 缓冲区
-#define I2C_MASTER_RX_BUF_DISABLE   0         // 禁用 RX 缓冲区
-
-
-
-#define QMI8658C_I2C_Add			0x6B
 /*---------------------General Purpose Registers------------------*/
 #define QMI8658C_RegAdd_WHO_AM_I	0x00	//Device Identifier
 #define QMI8658C_RegAdd_REVISION_ID	0x01	//Device Revision ID
@@ -114,39 +122,37 @@ typedef struct
 	short MZ;
 }QMI8658C_Data;//QMI8658C数据
 
-extern QMI8658C_Data QMI8658C_AGM;
-
 void QMI8658C_WriteReg(u8 reg_add, u8 reg_dat);
 uint8_t QMI8658C_ReadData(u8 reg_add);
-uint8_t QMI8658C_Reg_Init(void);  // QMI8658C 寄存器初始化
-uint8_t QMI8658C_ReadDev_Identifier(void);  // 读取设备标识符
-uint8_t QMI8658C_ReadDev_RevisionID(void);  // 读取设备修订 ID
-void QMI8658C_Set_CTRL1(void);  // 设置控制寄存器 1
-void QMI8658C_Set_CTRL2(void);  // 设置控制寄存器 2
-void QMI8658C_Set_CTRL3(void);  // 设置控制寄存器 3
-void QMI8658C_Set_CTRL4(void);  // 设置控制寄存器 4
-void QMI8658C_Set_CTRL5(void);  // 设置控制寄存器 5
-void QMI8658C_Set_CTRL6(void);  // 设置控制寄存器 6
-void QMI8658C_Set_CTRL7(void);  // 设置控制寄存器 7
-void QMI8658C_Soft_Reset(void);  // 软件复位设备
-uint8_t QMI8658C_Get_STATUS0(void);  // 获取状态寄存器 0 的值
-uint8_t QMI8658C_MagnetometerData_Check(void);  // 磁力计数据检查
-uint8_t QMI8658C_GyroscopeData_Check(void);  // 陀螺仪数据检查
-uint8_t QMI8658C_AccelerometerData_Check(void);  // 加速度计数据检查
-short QMI8658C_Get_AX(void);  // 获取 X 轴加速度值
-short QMI8658C_Get_AY(void);  // 获取 Y 轴加速度值
-short QMI8658C_Get_AZ(void);  // 获取 Z 轴加速度值
-short QMI8658C_Get_GX(void);  // 获取 X 轴陀螺仪值
-short QMI8658C_Get_GY(void);  // 获取 Y 轴陀螺仪值
-short QMI8658C_Get_GZ(void);  // 获取 Z 轴陀螺仪值
-short QMI8658C_Get_MX(void);  // 获取 X 轴磁力计值
-short QMI8658C_Get_MY(void);  // 获取 Y 轴磁力计值
-short QMI8658C_Get_MZ(void);  // 获取 Z 轴磁力计值
-short QMI8658C_Get_Temperature(void);  // 获取温度值
-uint8_t QMI8658C_Get_MagnetometerData(void);  // 获取磁力计数据
-uint8_t QMI8658C_Get_GyroscopeData(void);  // 获取陀螺仪数据
-uint8_t QMI8658C_Get_AccelerometerData(void);  // 获取加速度计数据
 
-
+uint8_t QMI8658C_Reg_Init(void);
+uint8_t QMI8658C_ReadDev_Identifier(void);
+uint8_t QMI8658C_ReadDev_RevisionID(void);
+void QMI8658C_Set_CTRL1(void);
+void QMI8658C_Set_CTRL2(void);
+void QMI8658C_Set_CTRL3(void);
+void QMI8658C_Set_CTRL4(void);
+void QMI8658C_Set_CTRL5(void);
+void QMI8658C_Set_CTRL6(void);
+void QMI8658C_Set_CTRL7(void);
+void QMI8658C_Soft_Reset(void);
+uint8_t QMI8658C_Get_STATUS0(void);
+uint8_t QMI8658C_MagnetometerData_Check(void);
+uint8_t QMI8658C_GyroscopeData_Check(void);
+uint8_t QMI8658C_AccelerometerData_Check(void);
+short QMI8658C_Get_AX(void);
+short QMI8658C_Get_AY(void);
+short QMI8658C_Get_AZ(void);
+short QMI8658C_Get_GX(void);
+short QMI8658C_Get_GY(void);
+short QMI8658C_Get_GZ(void);
+short QMI8658C_Get_MX(void);
+short QMI8658C_Get_MY(void);
+short QMI8658C_Get_MZ(void);
+short QMI8658C_Get_Temperature(void);
+uint8_t QMI8658C_Get_MagnetometerData(void);
+uint8_t QMI8658C_Get_GyroscopeData(void);
+uint8_t QMI8658C_Get_AccelerometerData(void);
 esp_err_t i2c_master_init(void);
 #endif
+
