@@ -143,34 +143,21 @@ static void lvgl_task(void *arg)
  *   APPLICATION MAIN
  **********************/
 
+static const char *TAG = "MAIN"; // 定义日志标签
 i2c_obj_t i2c1_master;
 
 void app_main(void)
 {
     // 打印芯片信息和重启原因
     print_chip_info();
-    // 初始化 QMI8658C 寄存器
-    if (QMI8658C_Reg_Init() == 0) {
-        printf("QMI8658C 寄存器初始化失败");
-        return; // 终止执行
-    }
+    ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
+    ESP_LOGI(TAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
+    qmi8658_init(); // 初始化qmi8658芯片
+    // vTaskDelay(100 / portTICK_PERIOD_MS); // 延迟100ms，避免过快采样
+    // qmi8658_calibrate(&QMI8658); //校准待测试
     wifi_init();
     // 创建LVGL任务
     // xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
-        while (1) {
-        // 读取时进行补偿
-        int16_t ax = QMI8658C_Get_AX() - ax_offset;
-        int16_t ay = QMI8658C_Get_AY() - ay_offset;
-        int16_t az = QMI8658C_Get_AZ() - az_offset;
+    xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 
-        int16_t gx = QMI8658C_Get_GX() - gx_offset;
-        int16_t gy = QMI8658C_Get_GY() - gy_offset;
-        int16_t gz = QMI8658C_Get_GZ() - gz_offset;
-        // 打印读取到的数据
-        ESP_LOGI("QMI8658C", "加速度: X=%d, Y=%d, Z=%d", ax, ay, az);
-        ESP_LOGI("QMI8658C", "陀螺仪: X=%d, Y=%d, Z=%d", gx, gy, gz);
-
-        // 延时1秒
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
 }

@@ -1,569 +1,208 @@
 #include "QMI8658.h"
 #include <string.h>
 
-QMI8658C_Data QMI8658C_AGM = {0};
 static const char *TAG = "QMI8658C"; // 定义日志标签
-int16_t ax_offset = 0, ay_offset = 0, az_offset = 0;
-int16_t gx_offset = 0, gy_offset = 0, gz_offset = 0;
+t_sQMI8658 QMI8658; // 定义QMI8658结构体变量
 
 
-// I2C 初始化函数
-esp_err_t i2c_master_init(void) {
-    i2c_config_t conf = {
+// 创建步数结构体实例
+t_step_counter step_counter = {
+    .current_step_count = 0,
+    .previous_step_count = 0,
+    .total_step_count = 0,
+    .timestamp = 0,
+    .step_detected = false
+};
+
+/******************************************************************************/
+/***************************  I2C ↓ *******************************************/
+esp_err_t bsp_i2c_init(void)
+{
+    i2c_config_t i2c_conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
+        .sda_io_num = BSP_I2C_SDA,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = I2C_MASTER_SCL_IO,
+        .scl_io_num = BSP_I2C_SCL,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = I2C_MASTER_FREQ_HZ,
+        .master.clk_speed = BSP_I2C_FREQ_HZ
     };
+    i2c_param_config(BSP_I2C_NUM, &i2c_conf);
 
-    // 配置 I2C 参数
-    esp_err_t err = i2c_param_config(I2C_MASTER_NUM, &conf);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "I2C param config failed: %s", esp_err_to_name(err));
-        return err;  // 返回错误
-    }
+    return i2c_driver_install(BSP_I2C_NUM, i2c_conf.mode, 0, 0, 0);
+}
+/***************************  I2C ↑  *******************************************/
+/*******************************************************************************/
 
-    // 安装 I2C 驱动
-    err = i2c_driver_install(I2C_MASTER_NUM, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "I2C driver installation failed: %s", esp_err_to_name(err));
-        return err;  // 返回错误
-	}
 
-	ESP_LOGI(TAG, "I2C master initialized successfully");  // 成功初始化信息
-    return ESP_OK;  // 返回成功
+/*******************************************************************************/
+/***************************  姿态传感器 QMI8658 ↓   ****************************/
+
+// 读取QMI8658寄存器的值
+esp_err_t qmi8658_register_read(uint8_t reg_addr, uint8_t *data, size_t len)
+{
+    return i2c_master_write_read_device(BSP_I2C_NUM, QMI8658_SENSOR_ADDR,  &reg_addr, 1, data, len, 1000 / portTICK_PERIOD_MS);
 }
 
-void QMI8658C_WriteReg(uint8_t reg_add, uint8_t reg_dat)
+// 给QMI8658的寄存器写值
+esp_err_t qmi8658_register_write_byte(uint8_t reg_addr, uint8_t data)
 {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();  // 创建 I2C 命令句柄
+    uint8_t write_buf[2] = {reg_addr, data};
 
-    // 开始 I2C 通信
-    i2c_master_start(cmd);
-
-    // 写入设备地址和寄存器地址
-    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
-    i2c_master_write_byte(cmd, reg_add, ACK_CHECK_EN);
-
-    // 写入数据
-    i2c_master_write_byte(cmd, reg_dat, ACK_CHECK_EN);
-
-    i2c_master_stop(cmd);  // 停止 I2C 通信
-
-    // 执行命令
-    esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(I2C_MASTER_TIMEOUT_MS));
-    if (ret != ESP_OK) {
-        ESP_LOGE("QMI8658C", "I2C write failed: %s", esp_err_to_name(ret));
-    }
-
-    i2c_cmd_link_delete(cmd);  // 删除命令句柄
+    return i2c_master_write_to_device(BSP_I2C_NUM, QMI8658_SENSOR_ADDR, write_buf, sizeof(write_buf), 1000 / portTICK_PERIOD_MS);
 }
 
-uint8_t QMI8658C_ReadData(uint8_t reg_add)
+// 初始化qmi8658
+void qmi8658_init(void)
 {
-    uint8_t data = 0;
+    uint8_t id = 0; // 芯片的ID号
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();  // 创建 I2C 命令句柄
-
-    // 开始 I2C 通信，发送寄存器地址
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
-    i2c_master_write_byte(cmd, reg_add, ACK_CHECK_EN);
-
-    // 再次启动 I2C 通信，读数据
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (QMI8658C_I2C_Add << 1) | I2C_MASTER_READ, ACK_CHECK_EN);
-    i2c_master_read_byte(cmd, &data, I2C_MASTER_NACK);
-
-    i2c_master_stop(cmd);  // 停止 I2C 通信
-
-    // 执行命令
-    esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(I2C_MASTER_TIMEOUT_MS));
-    if (ret != ESP_OK) {
-        ESP_LOGE("QMI8658C", "I2C read failed: %s", esp_err_to_name(ret));
-    }
-
-    i2c_cmd_link_delete(cmd);  // 删除命令句柄
-
-    return data;
-}
-
-
-void QMI8658C_Calibrate(void)
-{
-    int32_t ax_sum = 0, ay_sum = 0, az_sum = 0;
-    int32_t gx_sum = 0, gy_sum = 0, gz_sum = 0;
-
-    for (int i = 0; i < 100; i++) {
-        ax_sum += QMI8658C_Get_AX();
-        ay_sum += QMI8658C_Get_AY();
-        az_sum += QMI8658C_Get_AZ();
-        
-        gx_sum += QMI8658C_Get_GX();
-        gy_sum += QMI8658C_Get_GY();
-        gz_sum += QMI8658C_Get_GZ();
-        
-        vTaskDelay(pdMS_TO_TICKS(10)); // 延时 10ms
-    }
-
-    ax_offset = ax_sum / 100;
-    ay_offset = ay_sum / 100;
-	az_sum = az_sum - 1000 * 100;
-    az_offset = az_sum / 100;
-
-    gx_offset = gx_sum / 100;
-    gy_offset = gy_sum / 100;
-    gz_offset = gz_sum / 100;
-	ESP_LOGI("QMI8658C", "	ax_offset: %d,ay_offset: %d,az_offset: %d,gx_offset: %d,gy_offset: %d,gz_offset: %d",\
-			ax_offset,ay_offset,az_offset,gx_offset,gy_offset,gz_offset);
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Reg_Init
-*	功能说明: QMI8658C初始化寄存器
-*	形	  参: 无
-*	返 回 值: 1:成功	0:失败
-**********************************************************************************************************/
-uint8_t QMI8658C_Reg_Init(void)
-{
-	esp_err_t ret = i2c_master_init();
-    if (ret != ESP_OK) {
-        // 处理初始化失败的情况
-        printf("Failed to initialize I2C: %s", esp_err_to_name(ret));
-        return;
-    }
-	if(QMI8658C_ReadDev_Identifier() == 1 && QMI8658C_ReadDev_RevisionID() == 1)
-	{
-		QMI8658C_Set_CTRL1();
-		QMI8658C_Set_CTRL7();
-		QMI8658C_Set_CTRL2();
-		QMI8658C_Set_CTRL3();
-		QMI8658C_Set_CTRL4();
-		QMI8658C_Set_CTRL5();
-		//校准
-		QMI8658C_Calibrate();
-		return 1;
-	}
-
-	return 0;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_ReadDev_Identifier
-*	功能说明: 读取Device identifier并判断是否正确
-*	形	  参: 无
-*	返 回 值: Device identifier是否正确
-**********************************************************************************************************/
-uint8_t QMI8658C_ReadDev_Identifier(void)
-{
-    uint8_t identifier = QMI8658C_ReadData(QMI8658C_RegAdd_WHO_AM_I);
-    if (identifier == 0x05) // Device identifier should be 0x05
+    qmi8658_register_read(QMI8658_WHO_AM_I, &id ,1); // 读芯片的ID号
+    while (id != 0x05)  // 判断读到的ID号是否是0x05
     {
-        ESP_LOGI("QMI8658C", "Device identifier is correct: 0x%02X", identifier);
-        return 1;
+        vTaskDelay(1000 / portTICK_PERIOD_MS);  // 延时1秒
+        qmi8658_register_read(QMI8658_WHO_AM_I, &id ,1); // 读取ID号
     }
-    else
-    {
-        ESP_LOGE("QMI8658C", "Device identifier mismatch: 0x%02X (expected 0x05)", identifier);
-        return 0;
+    ESP_LOGI(TAG, "QMI8658 OK!");  // 打印信息
+
+    qmi8658_register_write_byte(QMI8658_RESET, 0xb0);  // 复位  
+    vTaskDelay(10 / portTICK_PERIOD_MS);  // 延时10ms
+    qmi8658_register_write_byte(QMI8658_CTRL1, 0x40); // CTRL1 设置地址自动增加
+    qmi8658_register_write_byte(QMI8658_CTRL7, 0x03); // CTRL7 允许加速度和陀螺仪
+    qmi8658_register_write_byte(QMI8658_CTRL2, 0x95); // CTRL2 设置ACC 4g 250Hz
+    qmi8658_register_write_byte(QMI8658_CTRL3, 0xd5); // CTRL3 设置GRY 512dps 250Hz 
+}
+
+// 假设我们在读取步数后
+void update_step_counter(uint32_t step_count) 
+{
+    step_counter.previous_step_count = step_counter.current_step_count; // 更新上次计数
+    step_counter.current_step_count = step_count; // 更新当前步数
+    step_counter.total_step_count += step_counter.current_step_count - step_counter.previous_step_count; // 累加总步数
+    step_counter.timestamp = (uint32_t)esp_timer_get_time() / 1000; // 获取当前时间戳（毫秒）
+    
+    // 检测步数变化
+    step_counter.step_detected = (step_counter.current_step_count != step_counter.previous_step_count);
+}
+
+//读取步数
+void qmi_Read_StepCount(void)
+{
+	// 读取步数计数
+	uint8_t step_count_low, step_count_mid, step_count_high;
+
+	// 读取步数计数低位、中位和高位
+	qmi8658_register_read(QMI8658_STEP_CNT_LOW, &step_count_low, 1);
+	qmi8658_register_read(QMI8658_STEP_CNT_MIDL, &step_count_mid, 1);
+	qmi8658_register_read(QMI8658_STEP_CNT_HIGH, &step_count_high, 1);
+
+	// 计算总步数
+	uint32_t step_count = (step_count_high << 16) | (step_count_mid << 8) | step_count_low;
+    update_step_counter(step_count);
+    // 打印步数信息
+    ESP_LOGI(TAG, "Current Steps: %u, Total Steps: %u", step_counter.current_step_count, step_counter.total_step_count);
+
+}
+
+
+
+// 读取加速度和陀螺仪寄存器值
+void qmi8658_Read_AccAndGry(t_sQMI8658 *p) 
+{
+    uint8_t status;
+    int16_t buf[6] = {0};  // 存储传感器的原始数据
+
+    // 读取状态寄存器以检查数据是否准备就绪
+    qmi8658_register_read(QMI8658_STATUS0, &status, 1);
+    if (status & 0x03) { // 检查加速度和陀螺仪数据是否可读
+        // 读取加速度和陀螺仪数据
+        qmi8658_register_read(QMI8658_AX_L, (uint8_t *)buf, 12);
+
+        // 去除加速度的偏置
+        p->acc_x = buf[0] - p->acc_offset[0];
+        p->acc_y = buf[1] - p->acc_offset[1];
+        p->acc_z = buf[2] - p->acc_offset[2];
+
+        // 去除陀螺仪的偏置
+        p->gyr_x = buf[3] - p->gyr_offset[0];
+        p->gyr_y = buf[4] - p->gyr_offset[1];
+        p->gyr_z = buf[5] - p->gyr_offset[2];
+
+        // 使用 ESP-IDF 日志打印校准后的数据
+        ESP_LOGI("QMI8658", "Acc - X: %d, Y: %d, Z: %d", p->acc_x, p->acc_y, p->acc_z);
+        ESP_LOGI("QMI8658", "Gyr - X: %d, Y: %d, Z: %d", p->gyr_x, p->gyr_y, p->gyr_z);
     }
 }
 
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_ReadDev_RevisionID
-*	功能说明: 读取Revision ID并判断是否正确
-*	形	  参: 无
-*	返 回 值: Revision ID是否正确
-**********************************************************************************************************/
-uint8_t QMI8658C_ReadDev_RevisionID(void)
+// 获取XYZ轴的倾角值
+void qmi8658_fetch_angleFromAcc(t_sQMI8658 *p)
 {
-    uint8_t revision_id = QMI8658C_ReadData(QMI8658C_RegAdd_REVISION_ID);
-    if (revision_id == 0x7B || revision_id == 0x7c) // Device Revision ID should be 0x7B
-    {
-        ESP_LOGI("QMI8658C", "Revision ID is correct: 0x%02X", revision_id);
-        return 1;
+    float temp;
+
+    qmi8658_Read_AccAndGry(p); // 读取加速度和陀螺仪的寄存器值
+
+	// 使用 ESP-IDF 日志打印加速度数据
+    ESP_LOGI(TAG, "Acceleration - X: %d, Y: %d, Z: %d", p->acc_x, p->acc_y, p->acc_z);
+
+    // 根据寄存器值 计算倾角值 并把弧度转换成角度
+    temp = (float)p->acc_x / sqrt( ((float)p->acc_y * (float)p->acc_y + (float)p->acc_z * (float)p->acc_z) );
+    p->AngleX = atan(temp)*57.29578f; // 180/π=57.29578
+    temp = (float)p->acc_y / sqrt( ((float)p->acc_x * (float)p->acc_x + (float)p->acc_z * (float)p->acc_z) );
+    p->AngleY = atan(temp)*57.29578f; // 180/π=57.29578
+    temp = sqrt( ((float)p->acc_x * (float)p->acc_x + (float)p->acc_y * (float)p->acc_y) ) / (float)p->acc_z;
+    p->AngleZ = atan(temp)*57.29578f; // 180/π=57.29578
+}
+
+// 初始化传感器，采集100次数据，计算偏置
+void qmi8658_calibrate(t_sQMI8658 *p) 
+{
+    int32_t acc_sum[3] = {0, 0, 0}; // 用于累加加速度
+    int32_t gyr_sum[3] = {0, 0, 0}; // 用于累加陀螺仪
+	ESP_LOGI(TAG, "QMI8658 SelfTest Start!");  // 打印信息
+    // 采集100次数据
+    for (int i = 0; i < 101; i++) {
+		ESP_LOGI(TAG, "i:%d",i);  // 打印信息
+        qmi8658_Read_AccAndGry(p);
+		if(i != 0)
+		{
+			acc_sum[0] += p->acc_x;
+			acc_sum[1] += p->acc_y;
+			acc_sum[2] += p->acc_z;
+
+			gyr_sum[0] += p->gyr_x;
+			gyr_sum[1] += p->gyr_y;
+			gyr_sum[2] += p->gyr_z;
+		}
+        vTaskDelay(10 / portTICK_PERIOD_MS); // 延迟10ms，避免过快采样
     }
-    else
-    {
-        ESP_LOGE("QMI8658C", "Revision ID mismatch: 0x%02X (expected 0x7B)", revision_id);
-        return 0;
-    }
+	ESP_LOGI(TAG, "QMI8658 SelfTest End!");  // 打印信息
+    // 计算平均值
+    p->acc_offset[0] = acc_sum[0] / 100.0f;
+    p->acc_offset[1] = acc_sum[1] / 100.0f;
+    p->acc_offset[2] = acc_sum[2] / 100.0f;
+
+    p->gyr_offset[0] = gyr_sum[0] / 100.0f;
+    p->gyr_offset[1] = gyr_sum[1] / 100.0f;
+    p->gyr_offset[2] = gyr_sum[2] / 100.0f;
+
+    // 打印偏置值，确保初始化完成
+    ESP_LOGI("QMI8658", "Acc offset - X: %.2f, Y: %.2f, Z: %.2f", p->acc_offset[0], p->acc_offset[1], p->acc_offset[2]);
+    ESP_LOGI("QMI8658", "Gyr offset - X: %.2f, Y: %.2f, Z: %.2f", p->gyr_offset[0], p->gyr_offset[1], p->gyr_offset[2]);
 }
 
 
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL1
-*	功能说明: 配置CTRL1寄存器，控制电源状态，配置SPI通信
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL1(void)
+// QMI8658_Task  采集六轴数据
+void QMI8658_Task(void *arg)
 {
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL1, 0x20);//四线SPI，大端读取，使能内部2M晶振
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL2
-*	功能说明: 配置CTRL2寄存器，配置加速度计满量程和输出数据速率;使能自测
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL2(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL2, 0xB4);//加速度计自检，±16g，500Hz采样
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL3
-*	功能说明: 配置CTRL3寄存器，配置陀螺仪满量程和输出数据速率;使能自测
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL3(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL3, 0xB4);//陀螺仪自检，±128dps，500Hz采样
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL4
-*	功能说明: 配置CTRL4寄存器，配置磁力仪输出数据速率和选择设备
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL4(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL4, 0x00);//无磁力仪
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL5
-*	功能说明: 配置CTRL5寄存器，配置启用/禁用低通滤波
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL5(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL5, 0x77);//不使能陀螺仪、加速度计的低通滤波
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL6
-*	功能说明: 配置CTRL6寄存器
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL6(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL6, 0x00);
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Set_CTRL7
-*	功能说明: 配置CTRL7寄存器，启用/禁用姿态引擎，加速度计，分别使用sEN、aEN、gEN和mENbits的陀螺仪和磁强计
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Set_CTRL7(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_CTRL7, 0x03);//使能陀螺仪、加速度计
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Soft_Reset
-*	功能说明: 传感器软件复位
-*	形	  参: 无
-*	返 回 值: 无
-**********************************************************************************************************/
-void QMI8658C_Soft_Reset(void)
-{
-	QMI8658C_WriteReg(QMI8658C_RegAdd_RESET, 0x00);
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_STATUS0
-*	功能说明: 输出数据可用性。
-*	形	  参: 无
-*	返 回 值: 数据可用性
-**********************************************************************************************************/
-uint8_t QMI8658C_Get_STATUS0(void)
-{
-	return QMI8658C_ReadData(QMI8658C_RegAdd_STATUS0);
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_MagnetometerData_Check
-*	功能说明: 检查磁力计数据是否可用
-*	形	  参: 无
-*	返 回 值: 1：新数据可用	0：上次读取后没有更新
-**********************************************************************************************************/
-uint8_t QMI8658C_MagnetometerData_Check(void)
-{
-	uint8_t status = 0;
-
-	status = QMI8658C_Get_STATUS0();
-	if(status >> 2 & 1)
-		return 1;
-	else
-		return 0;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_GyroscopeData_Check
-*	功能说明: 检查陀螺仪数据是否可用
-*	形	  参: 无
-*	返 回 值: 1：新数据可用	0：上次读取后没有更新
-**********************************************************************************************************/
-uint8_t QMI8658C_GyroscopeData_Check(void)
-{
-	uint8_t status = 0;
-
-	status = QMI8658C_Get_STATUS0();
-	if(status >> 1 & 1)
-		return 1;
-	else
-		return 0;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_AccelerometerData_Check
-*	功能说明: 检查加速度计数据是否可用
-*	形	  参: 无
-*	返 回 值: 1：新数据可用	0：上次读取后没有更新
-**********************************************************************************************************/
-uint8_t QMI8658C_AccelerometerData_Check(void)
-{
-	uint8_t status = 0;
-
-	status = QMI8658C_Get_STATUS0();
-	if(status >> 0 & 1)
-		return 1;
-	else
-		return 0;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_AX
-*	功能说明: 输出AX数据
-*	形	  参: 无
-*	返 回 值: 16位AX数据
-**********************************************************************************************************/
-short QMI8658C_Get_AX(void)
-{
-	short AX = 0;
-	char AX_H = 0, AX_L = 0;
-
-	AX_H = QMI8658C_ReadData(QMI8658C_RegAdd_AX_H);
-	AX_L = QMI8658C_ReadData(QMI8658C_RegAdd_AX_L);
-	AX = (AX_H << 8) | AX_L;
-	return AX;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_AY
-*	功能说明: 输出AY数据
-*	形	  参: 无
-*	返 回 值: 16位AY数据
-**********************************************************************************************************/
-short QMI8658C_Get_AY(void)
-{
-	short AY = 0;
-	char AY_H = 0, AY_L = 0;
-
-	AY_H = QMI8658C_ReadData(QMI8658C_RegAdd_AY_H);
-	AY_L = QMI8658C_ReadData(QMI8658C_RegAdd_AY_L);
-	AY = (AY_H << 8) | AY_L;
-	return AY;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_AZ
-*	功能说明: 输出AZ数据
-*	形	  参: 无
-*	返 回 值: 16位AZ数据
-**********************************************************************************************************/
-short QMI8658C_Get_AZ(void)
-{
-	short AZ = 0;
-	char AZ_H = 0, AZ_L = 0;
-
-	AZ_H = QMI8658C_ReadData(QMI8658C_RegAdd_AZ_H);
-	AZ_L = QMI8658C_ReadData(QMI8658C_RegAdd_AZ_L);
-	AZ = (AZ_H << 8) | AZ_L;
-	return AZ;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_GX
-*	功能说明: 输出GX数据
-*	形	  参: 无
-*	返 回 值: 16位GX数据
-**********************************************************************************************************/
-short QMI8658C_Get_GX(void)
-{
-	short GX = 0;
-	char GX_H = 0, GX_L = 0;
-
-	GX_H = QMI8658C_ReadData(QMI8658C_RegAdd_GX_H);
-	GX_L = QMI8658C_ReadData(QMI8658C_RegAdd_GX_L);
-	GX = (GX_H << 8) | GX_L;
-	return GX;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_GY
-*	功能说明: 输出GY数据
-*	形	  参: 无
-*	返 回 值: 16位GY数据
-**********************************************************************************************************/
-short QMI8658C_Get_GY(void)
-{
-	short GY = 0;
-	char GY_H = 0, GY_L = 0;
-
-	GY_H = QMI8658C_ReadData(QMI8658C_RegAdd_GY_H);
-	GY_L = QMI8658C_ReadData(QMI8658C_RegAdd_GY_L);
-	GY = (GY_H << 8) | GY_L;
-	return GY;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_GZ
-*	功能说明: 输出GZ数据
-*	形	  参: 无
-*	返 回 值: 16位GZ数据
-**********************************************************************************************************/
-short QMI8658C_Get_GZ(void)
-{
-	short GZ = 0;
-	char GZ_H = 0, GZ_L = 0;
-
-	GZ_H = QMI8658C_ReadData(QMI8658C_RegAdd_GZ_H);
-	GZ_L = QMI8658C_ReadData(QMI8658C_RegAdd_GZ_L);
-	GZ = (GZ_H << 8) | GZ_L;
-	return GZ;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_MX
-*	功能说明: 输出MX数据
-*	形	  参: 无
-*	返 回 值: 16位MX数据
-**********************************************************************************************************/
-short QMI8658C_Get_MX(void)
-{
-	short MX = 0;
-	char MX_H = 0, MX_L = 0;
-
-	MX_H = QMI8658C_ReadData(QMI8658C_RegAdd_MX_H);
-	MX_L = QMI8658C_ReadData(QMI8658C_RegAdd_MX_L);
-	MX = (MX_H << 8) | MX_L;
-	return MX;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_MY
-*	功能说明: 输出MY数据
-*	形	  参: 无
-*	返 回 值: 16位MY数据
-**********************************************************************************************************/
-short QMI8658C_Get_MY(void)
-{
-	short MY = 0;
-	char MY_H = 0, MY_L = 0;
-
-	MY_H = QMI8658C_ReadData(QMI8658C_RegAdd_MY_H);
-	MY_L = QMI8658C_ReadData(QMI8658C_RegAdd_MY_L);
-	MY = (MY_H << 8) | MY_L;
-	return MY;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_MZ
-*	功能说明: 输出MZ数据
-*	形	  参: 无
-*	返 回 值: 16位MZ数据
-**********************************************************************************************************/
-short QMI8658C_Get_MZ(void)
-{
-	short MZ = 0;
-	char MZ_H = 0, MZ_L = 0;
-
-	MZ_H = QMI8658C_ReadData(QMI8658C_RegAdd_MZ_H);
-	MZ_L = QMI8658C_ReadData(QMI8658C_RegAdd_MZ_L);
-	MZ = (MZ_H << 8) | MZ_L;
-	return MZ;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_Temperature
-*	功能说明: 输出传感器温度
-*	形	  参: 无
-*	返 回 值: 16位传感器温度
-**********************************************************************************************************/
-short QMI8658C_Get_Temperature(void)
-{
-	short Temp = 0;
-	char Temp_H = 0, Temp_L = 0;
-
-	Temp_H = QMI8658C_ReadData(QMI8658C_RegAdd_TEMP_H);
-	Temp_L = QMI8658C_ReadData(QMI8658C_RegAdd_TEMP_L);
-	Temp = (Temp_H << 8) | Temp_L;
-	return Temp;
-}
-
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_MagnetometerData
-*	功能说明: 读取磁力计数据
-*	形	  参: MagnetometerData:输出磁力计的X、Y、Z数据
-*	返 回 值: 0：当前数据未更新 1：当前数据可用
-**********************************************************************************************************/
-uint8_t QMI8658C_Get_MagnetometerData(void)
-{
-	if(QMI8658C_MagnetometerData_Check() == 1)//判断磁力计数据是否可用
+	while(1)
 	{
-		QMI8658C_AGM.MX = QMI8658C_Get_MX();
-		QMI8658C_AGM.MY = QMI8658C_Get_MY();
-		QMI8658C_AGM.MZ = QMI8658C_Get_MZ();
-		return 1;
+		qmi8658_fetch_angleFromAcc(&QMI8658);   // 获取XYZ轴的倾角
+		// 输出XYZ轴的倾角
+		ESP_LOGI(TAG, "angle_x = %.1f  angle_y = %.1f angle_z = %.1f",QMI8658.AngleX, QMI8658.AngleY, QMI8658.AngleZ);
+		qmi_Read_StepCount();
+		vTaskDelay(1000 / portTICK_PERIOD_MS);  // 延时1000ms
 	}
-	return 0;
-}
 
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_GyroscopeData
-*	功能说明: 读取陀螺仪数据
-*	形	  参: GyroscopeData:输出陀螺仪的X、Y、Z数据
-*	返 回 值: 0：当前数据未更新 1：当前数据可用
-**********************************************************************************************************/
-uint8_t QMI8658C_Get_GyroscopeData(void)
-{
-	if(QMI8658C_GyroscopeData_Check() == 1)//判断陀螺仪数据是否可用
-	{
-		QMI8658C_AGM.GX = QMI8658C_Get_GX();
-		QMI8658C_AGM.GY = QMI8658C_Get_GY();
-		QMI8658C_AGM.GZ = QMI8658C_Get_GZ();
-		return 1;
-	}
-	return 0;
-}
 
-/**********************************************************************************************************
-*	函 数 名: QMI8658C_Get_AccelerometerData
-*	功能说明: 读取加速度计数据
-*	形	  参: AccelerometerData:输出加速度计的X、Y、Z数据
-*	返 回 值: 0：当前数据未更新 1：当前数据可用
-**********************************************************************************************************/
-uint8_t QMI8658C_Get_AccelerometerData(void)
-{
-	if(QMI8658C_AccelerometerData_Check() == 1)//判断加速度计数据是否可用
-	{
-		QMI8658C_AGM.AX = QMI8658C_Get_AX();
-		QMI8658C_AGM.AY = QMI8658C_Get_AY();
-		QMI8658C_AGM.AZ = QMI8658C_Get_AZ();
-		return 1;
-	}
-	return 0;
 }
-
+/***************************  姿态传感器 QMI8658 ↑  ****************************/
+/*******************************************************************************/

@@ -1,158 +1,126 @@
-#ifndef __QMI8658_H
-#define __QMI8658_H
+#pragma once
 
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include <stdio.h>
 #include <string.h>
+#include "math.h"
 
-#define I2C_MASTER_TIMEOUT_MS 1000     // I2C 通信超时 1000ms
+/******************************************************************************/
+/***************************  I2C ↓ *******************************************/
+#define BSP_I2C_SDA           (GPIO_NUM_11)   // SDA引脚
+#define BSP_I2C_SCL           (GPIO_NUM_10)   // SCL引脚
+
+#define BSP_I2C_NUM           (0)            // I2C外设
+#define BSP_I2C_FREQ_HZ       100000         // 100kHz
+
+esp_err_t bsp_i2c_init(void);   // 初始化I2C接口
+/***************************  I2C ↑  *******************************************/
+/*******************************************************************************/
 
 
-#define I2C_MASTER_SCL_IO           10        // I2C SCL 引脚
-#define I2C_MASTER_SDA_IO           11        // I2C SDA 引脚
-#define I2C_MASTER_NUM              1 			// I2C 端口号
-#define I2C_MASTER_FREQ_HZ          100000    // I2C 频率
-#define I2C_MASTER_TX_BUF_DISABLE   0         // 禁用 TX 缓冲区
-#define I2C_MASTER_RX_BUF_DISABLE   0         // 禁用 RX 缓冲区
-// 定义 ACK 检查
-#define ACK_CHECK_EN  true  // 启用 ACK 检查
-#define ACK_CHECK_DIS false // 禁用 ACK 检查
+/*******************************************************************************/
+/***************************  姿态传感器 QMI8658 ↓   ****************************/
+#define  QMI8658_SENSOR_ADDR       0x6B   // QMI8658 I2C地址
 
-#define QMI8658C_I2C_Add 0x6B  			// QMI8658C 的 I2C 地址
-
-extern int16_t ax_offset, ay_offset, az_offset;
-extern int16_t gx_offset, gy_offset, gz_offset;
-
-typedef unsigned char	u8;
-typedef unsigned short	u16;
-typedef unsigned int	u32;
-
-typedef unsigned char	uint8_t;
-typedef unsigned short	uint16_t;
-typedef unsigned int	uint32_t;
-
-/*---------------------General Purpose Registers------------------*/
-#define QMI8658C_RegAdd_WHO_AM_I	0x00	//Device Identifier
-#define QMI8658C_RegAdd_REVISION_ID	0x01	//Device Revision ID
-/*---------------------Setup and Control Registers------------------*/
-#define QMI8658C_RegAdd_CTRL1		0x02	//SPI Interface and Sensor Enable
-#define QMI8658C_RegAdd_CTRL2		0x03	//Accelerometer: Output Data Rate, Full Scale, Self Test
-#define QMI8658C_RegAdd_CTRL3		0x04	//Gyroscope: Output Data Rate, Full Scale, Self Test
-#define QMI8658C_RegAdd_CTRL4		0x05	//Magnetometer Settings: Output Data Rate, and Device Selection
-#define QMI8658C_RegAdd_CTRL5		0x06	//Low pass filter setting.
-#define QMI8658C_RegAdd_CTRL6		0x07	//AttitudeEngine? Settings: Output Data Rate, Motion on Demand
-#define QMI8658C_RegAdd_CTRL7		0x08	//Enable Sensors
-#define QMI8658C_RegAdd_CTRL8		0x09	//Reserved: Not Used
-#define QMI8658C_RegAdd_CTRL9		0x0A	//Host Commands
-/*---------------------Host Controlled Calibration Registers------------------*/
-#define QMI8658C_RegAdd_CAL1_L		0x0B	//Calibration Register CAL1_L – lower 8 bits. CAL1_H – upper 8 bits.
-#define QMI8658C_RegAdd_CAL1_H		0x0C
-#define QMI8658C_RegAdd_CAL2_L		0x0D	//Calibration Register CAL2_L – lower 8 bits. CAL2_H – upper 8 bits.
-#define QMI8658C_RegAdd_CAL2_H		0x0E
-#define QMI8658C_RegAdd_CAL3_L		0x0F	//Calibration Register CAL3_L – lower 8 bits. CAL3_H – upper 8 bits.
-#define QMI8658C_RegAdd_CAL3_H 		0x10
-#define QMI8658C_RegAdd_CAL4_L		0x11	//Calibration Register CAL4_L – lower 8 bits. CAL4_H – upper 8 bits.
-#define QMI8658C_RegAdd_CAL4_H		0x12
-/*---------------------FIFO Registers------------------*/
-#define QMI8658C_RegAdd_FIFO_WTM_TH		0x13	//FIFO watermark level, in ODRs
-#define QMI8658C_RegAdd_FIFO_CTRL		0x14	//FIFO Setup
-#define QMI8658C_RegAdd_FIFO_SMPL_CNT	0x15	//FIFO sample count LSBs
-#define QMI8658C_RegAdd_FIFO_STATUS		0x16	//FIFO Status
-#define QMI8658C_RegAdd_FIFO_DATA		0x17	//FIFO Data
-/*---------------------Status Registers------------------*/
-#define QMI8658C_RegAdd_I2CM_STATUS		0x2C	//I2C Master Status.
-#define QMI8658C_RegAdd_STATUSINT		0x2D	//Sensor Data Availability with the Locking mechanism.
-#define QMI8658C_RegAdd_STATUS0			0x2E	//Output Data Over Run and Data Availability.
-#define QMI8658C_RegAdd_STATUS1			0x2F	//Miscellaneous Status: Wake on Motion, CmdDone(CTRL9 protocol bit).
-/*---------------------Timestamp Register------------------*/
-#define QMI8658C_RegAdd_TIMESTAMP_LOW		0x30	//Sample Time Stamp TIMESTAMP_LOW – lower 8 bits.
-#define QMI8658C_RegAdd_TIMESTAMP_MID		0x31	//TIMESTAMP_MID – middle 8 bits.
-#define QMI8658C_RegAdd_TIMESTAMP_HIGH		0x32	//TIMESTAMP_HIGH – upper 8 bits.
-/*---------------------Data Output Registers------------------*/
-#define QMI8658C_RegAdd_TEMP_L		0x33	//Temperature Output Data TEMP_L – lower 8 bits. TEMP_H – upper 8 bits
-#define QMI8658C_RegAdd_TEMP_H		0x34
-#define QMI8658C_RegAdd_AX_L		0x35	//X-axis Acceleration AX_L – lower 8 bits. AX_H – upper 8 bits
-#define QMI8658C_RegAdd_AX_H		0x36
-#define QMI8658C_RegAdd_AY_L		0x37	//Y-axis Acceleration AY_L – lower 8 bits. AY_H – upper 8 bits
-#define QMI8658C_RegAdd_AY_H		0x38
-#define QMI8658C_RegAdd_AZ_L		0x39	//Z-axis Acceleration AZ_L – lower 8 bits. AZ_H – upper 8 bits
-#define QMI8658C_RegAdd_AZ_H		0x3A
-#define QMI8658C_RegAdd_GX_L		0x3B	//X-axis Angular Rate GX_L – lower 8 bits. GX_H – upper 8 bits
-#define QMI8658C_RegAdd_GX_H		0x3C
-#define QMI8658C_RegAdd_GY_L		0x3D	//Y-axis Angular Rate GY_L – lower 8 bits. GY_H – upper 8 bits
-#define QMI8658C_RegAdd_GY_H		0x3E
-#define QMI8658C_RegAdd_GZ_L		0x3F	//Z-axis Angular Rate GZ_L – lower 8 bits. GZ_H – upper 8 bits
-#define QMI8658C_RegAdd_GZ_H		0x40
-#define QMI8658C_RegAdd_MX_L		0x41	//X-axis Magnetic Field MX_L – lower 8 bits. MX_H – upper 8 bits
-#define QMI8658C_RegAdd_MX_H		0x42
-#define QMI8658C_RegAdd_MY_L		0x43	//Y-axis Magnetic Field MY_L – lower 8 bits. MY_H – upper 8 bits
-#define QMI8658C_RegAdd_MY_H		0x44
-#define QMI8658C_RegAdd_MZ_L		0x45	//Z-axis Magnetic Field MZ_L – lower 8 bits. MZ_H – upper 8 bits
-#define QMI8658C_RegAdd_MZ_H		0x46
-#define QMI8658C_RegAdd_dQW_L		0x49	//Quaternion Increment dQW dQW_L – lower 8 bits. dQW_H – upper 8 bits
-#define QMI8658C_RegAdd_dQW_H		0x4A
-#define QMI8658C_RegAdd_dQX_L		0x4B	//Quaternion Increment dQX dQX_L – lower 8 bits. dQX_H – upper 8 bits
-#define QMI8658C_RegAdd_dQX_H		0x4C
-#define QMI8658C_RegAdd_dQY_L		0x4D	//Quaternion Increment dQY dQY_L – lower 8 bits. dQY_H – upper 8 bits
-#define QMI8658C_RegAdd_dQY_H		0x4E
-#define QMI8658C_RegAdd_dQZ_L		0x4F	//Quaternion Increment dQZ dQZ_L – lower 8 bits. dQZ_H – upper 8 bits
-#define QMI8658C_RegAdd_dQZ_H		0x50
-#define QMI8658C_RegAdd_dVX_L		0x51	//Velocity Increment along X-axis dVX_L – lower 8 bits. dVX_H – upper 8 bits
-#define QMI8658C_RegAdd_dVX_H		0x52
-#define QMI8658C_RegAdd_dVY_L		0x53	//Velocity Increment along Y-axis dVY_L – lower 8 bits. dVY_H – upper 8 bits
-#define QMI8658C_RegAdd_dVY_H		0x54
-#define QMI8658C_RegAdd_dVZ_L		0x55	//Velocity Increment along Z-axis dVZ_L – lower 8 bits. dVZ_H – upper 8 bits
-#define QMI8658C_RegAdd_dVZ_H		0x56
-#define QMI8658C_RegAdd_AE_REG1		0x57	//AttitudeEngine Register 1
-#define QMI8658C_RegAdd_AE_REG2		0x58	//AttitudeEngine Register 2
-/*---------------------Reset Register------------------*/
-#define QMI8658C_RegAdd_RESET		0x60	//Soft Reset Register
-
-typedef struct
+// QMI8658寄存器地址
+enum qmi8658_reg
 {
-	short AX;//加速度数据
-	short AY;
-	short AZ;
-	short GX;//陀螺仪数据
-	short GY;
-	short GZ;
-	short MX;//磁力计数据
-	short MY;
-	short MZ;
-}QMI8658C_Data;//QMI8658C数据
+    QMI8658_WHO_AM_I,
+    QMI8658_REVISION_ID,
+    QMI8658_CTRL1,
+    QMI8658_CTRL2,
+    QMI8658_CTRL3,
+    QMI8658_CTRL4,
+    QMI8658_CTRL5,
+    QMI8658_CTRL6,
+    QMI8658_CTRL7,
+    QMI8658_CTRL8,
+    QMI8658_CTRL9,
+    QMI8658_CATL1_L,
+    QMI8658_CATL1_H,
+    QMI8658_CATL2_L,
+    QMI8658_CATL2_H,
+    QMI8658_CATL3_L,
+    QMI8658_CATL3_H,
+    QMI8658_CATL4_L,
+    QMI8658_CATL4_H,
+    QMI8658_FIFO_WTM_TH,
+    QMI8658_FIFO_CTRL,
+    QMI8658_FIFO_SMPL_CNT,
+    QMI8658_FIFO_STATUS,
+    QMI8658_FIFO_DATA,
+    QMI8658_STATUSINT = 45,
+    QMI8658_STATUS0,
+    QMI8658_STATUS1,
+    QMI8658_TIMESTAMP_LOW,
+    QMI8658_TIMESTAMP_MID,
+    QMI8658_TIMESTAMP_HIGH,
+    QMI8658_TEMP_L,
+    QMI8658_TEMP_H,
+    QMI8658_AX_L,
+    QMI8658_AX_H,
+    QMI8658_AY_L,
+    QMI8658_AY_H,
+    QMI8658_AZ_L,
+    QMI8658_AZ_H,
+    QMI8658_GX_L,
+    QMI8658_GX_H,
+    QMI8658_GY_L,
+    QMI8658_GY_H,
+    QMI8658_GZ_L,
+    QMI8658_GZ_H,
+    QMI8658_COD_STATUS = 70,
+    QMI8658_dQW_L = 73,
+    QMI8658_dQW_H,
+    QMI8658_dQX_L,
+    QMI8658_dQX_H,
+    QMI8658_dQY_L,
+    QMI8658_dQY_H,
+    QMI8658_dQZ_L,
+    QMI8658_dQZ_H,
+    QMI8658_dVX_L,
+    QMI8658_dVX_H,
+    QMI8658_dVY_L,
+    QMI8658_dVY_H,
+    QMI8658_dVZ_L,
+    QMI8658_dVZ_H,
+    QMI8658_TAP_STATUS = 89,
+    QMI8658_STEP_CNT_LOW,
+    QMI8658_STEP_CNT_MIDL,
+    QMI8658_STEP_CNT_HIGH,
+    QMI8658_RESET = 96
+};
 
-void QMI8658C_WriteReg(u8 reg_add, u8 reg_dat);
-uint8_t QMI8658C_ReadData(u8 reg_add);
+// 倾角结构体
+typedef struct{
+    int16_t acc_x;
+	int16_t acc_y;
+	int16_t acc_z;
+	int16_t gyr_x;
+	int16_t gyr_y;
+	int16_t gyr_z;
+	float AngleX;
+	float AngleY;
+	float AngleZ;
+	float acc_offset[3]; // 存储加速度的偏置
+    float gyr_offset[3]; // 存储陀螺仪的偏置
+}t_sQMI8658;
 
-uint8_t QMI8658C_Reg_Init(void);
-uint8_t QMI8658C_ReadDev_Identifier(void);
-uint8_t QMI8658C_ReadDev_RevisionID(void);
-void QMI8658C_Set_CTRL1(void);
-void QMI8658C_Set_CTRL2(void);
-void QMI8658C_Set_CTRL3(void);
-void QMI8658C_Set_CTRL4(void);
-void QMI8658C_Set_CTRL5(void);
-void QMI8658C_Set_CTRL6(void);
-void QMI8658C_Set_CTRL7(void);
-void QMI8658C_Soft_Reset(void);
-uint8_t QMI8658C_Get_STATUS0(void);
-uint8_t QMI8658C_MagnetometerData_Check(void);
-uint8_t QMI8658C_GyroscopeData_Check(void);
-uint8_t QMI8658C_AccelerometerData_Check(void);
-short QMI8658C_Get_AX(void);
-short QMI8658C_Get_AY(void);
-short QMI8658C_Get_AZ(void);
-short QMI8658C_Get_GX(void);
-short QMI8658C_Get_GY(void);
-short QMI8658C_Get_GZ(void);
-short QMI8658C_Get_MX(void);
-short QMI8658C_Get_MY(void);
-short QMI8658C_Get_MZ(void);
-short QMI8658C_Get_Temperature(void);
-uint8_t QMI8658C_Get_MagnetometerData(void);
-uint8_t QMI8658C_Get_GyroscopeData(void);
-uint8_t QMI8658C_Get_AccelerometerData(void);
-esp_err_t i2c_master_init(void);
-#endif
+// 步数结构体
+typedef struct {
+    uint32_t current_step_count; // 当前步数计数
+    uint32_t previous_step_count; // 上一轮读取的步数计数
+    uint32_t total_step_count; // 总步数
+    uint32_t timestamp; // 时间戳（可选，表示最后更新的时间）
+    bool step_detected; // 步数是否被检测到
+} t_step_counter;
 
+extern t_sQMI8658 QMI8658; // 定义QMI8658结构体变量
+
+void qmi8658_init(void);  // QMI8658初始化
+void qmi8658_fetch_angleFromAcc(t_sQMI8658 *p);  // 获取倾角
+void qmi8658_calibrate(t_sQMI8658 *p);
+void QMI8658_Task(void *arg);
+/***************************  姿态传感器 QMI8658 ↑  ****************************/
+/*******************************************************************************/
