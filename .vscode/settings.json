@@ -3,6 +3,9 @@
     "idf.portWin": "COM3",
     "idf.flashType": "UART",
     "files.associations": {
-        "QMI8658.C": "cpp"
+        "QMI8658.C": "cpp",
+        "wifi_smartconfig.h": "c",
+        "rtc.h": "c",
+        "qmi8658.h": "c"
     }
 }

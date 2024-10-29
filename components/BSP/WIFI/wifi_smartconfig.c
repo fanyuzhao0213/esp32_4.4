@@ -1,5 +1,5 @@
 #include "wifi_smartconfig.h"
-
+#include "rtc.h"
 
 
 /* 定义事件 */
@@ -204,10 +204,18 @@ void obtain_time(void)
     struct tm timeinfo;
     char strftime_buf[64];
     uint8_t timeout_count =0;
+    esp_err_t err;
 
+    // 获取并输出当前时间
+    err = sys_rtc_get_time();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "获取时间失败");
+    }     
+    
     initialize_sntp();
     // 等待时间同步
-    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) {
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) 
+    {
         ESP_LOGI(TAG, "Waiting for system time to be set...");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         timeout_count++;
@@ -222,9 +230,31 @@ void obtain_time(void)
     // 获取当前时间
     time(&now);
     localtime_r(&now, &timeinfo);
-
+    
     // 格式化并打印时间
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time is: %s", strftime_buf);
+
+
+    // 提取时间信息并设置到RTC
+    uint8_t hours = timeinfo.tm_hour;
+    uint8_t minutes = timeinfo.tm_min;
+    uint8_t seconds = timeinfo.tm_sec;
+    uint8_t day = timeinfo.tm_mday;
+    uint8_t month = timeinfo.tm_mon + 1; // tm_mon 从0开始（0表示一月），因此需要+1
+    uint8_t year = timeinfo.tm_year % 100; // tm_year 是从1900年起算的，因此我们取最后两位表示年份
+
+    // 打印提取出的时间信息
+    ESP_LOGI(TAG, "准备同步到RTC的时间信息:");
+    ESP_LOGI(TAG, "小时: %02d, 分钟: %02d, 秒: %02d", hours, minutes, seconds);
+    ESP_LOGI(TAG, "日期: %02d, 月份: %02d, 年份: %02d", day, month, year);
+
+    // 调用RTC设置时间的函数
+    err = rtc_set_time(hours, minutes, seconds, day, month, year);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "时间成功同步到RTC");
+    } else {
+        ESP_LOGE(TAG, "时间同步到RTC失败");
+    }
 }
 

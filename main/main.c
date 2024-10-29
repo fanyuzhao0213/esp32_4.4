@@ -18,7 +18,7 @@
 #include  "mqtt.h"
 #include "iic.h"
 #include "QMI8658.h"
-
+#include "rtc.h"
 
 /*********************
  *      DEFINES
@@ -102,6 +102,7 @@ void wifi_init(void)
     {
         //获取weather 任务启动
         //start http  task
+        obtain_time();
         mqtt_start();
 		xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
     }
@@ -148,16 +149,15 @@ i2c_obj_t i2c1_master;
 
 void app_main(void)
 {
-    // 打印芯片信息和重启原因
-    print_chip_info();
+    print_chip_info();                  // 打印芯片信息和重启原因
     ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
     ESP_LOGI(TAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
     qmi8658_init(); // 初始化qmi8658芯片
-    // vTaskDelay(100 / portTICK_PERIOD_MS); // 延迟100ms，避免过快采样
-    // qmi8658_calibrate(&QMI8658); //校准待测试
     wifi_init();
     // 创建LVGL任务
     // xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
-    xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
+    // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 
 }
+
+

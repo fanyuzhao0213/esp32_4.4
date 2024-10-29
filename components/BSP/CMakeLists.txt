@@ -8,7 +8,8 @@ set(src_dirs
             WEATHER
             MQTT
             IIC
-            QMI8658)
+            QMI8658
+            RTC)
 
 set(include_dirs
             LED
@@ -20,7 +21,8 @@ set(include_dirs
             WEATHER
             MQTT
             IIC
-            QMI8658)
+            QMI8658
+            RTC)
 
 set(requires
             driver

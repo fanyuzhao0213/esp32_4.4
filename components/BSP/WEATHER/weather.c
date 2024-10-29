@@ -144,7 +144,6 @@ void http_client_task(void *pvParameters)
                 }
             }
             esp_http_client_close(client);
-            obtain_time();
         }
         timecount++;
         if(timecount >= WEATHER_UPDATE_TIME)

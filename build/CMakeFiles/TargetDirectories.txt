@@ -423,6 +423,7 @@ E:/esp32_project/esp32_4.4/build/esp-idf/asio/CMakeFiles/list_install_components
 E:/esp32_project/esp32_4.4/build/esp-idf/asio/CMakeFiles/install.dir
 E:/esp32_project/esp32_4.4/build/esp-idf/asio/CMakeFiles/install/local.dir
 E:/esp32_project/esp32_4.4/build/esp-idf/asio/CMakeFiles/install/strip.dir
+E:/esp32_project/esp32_4.4/build/esp-idf/bt/CMakeFiles/__idf_bt.dir
 E:/esp32_project/esp32_4.4/build/esp-idf/bt/CMakeFiles/edit_cache.dir
 E:/esp32_project/esp32_4.4/build/esp-idf/bt/CMakeFiles/rebuild_cache.dir
 E:/esp32_project/esp32_4.4/build/esp-idf/bt/CMakeFiles/list_install_components.dir
