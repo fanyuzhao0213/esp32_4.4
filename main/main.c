@@ -20,6 +20,8 @@
 #include "QMI8658.h"
 #include "rtc.h"
 
+#include "my_gui.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -127,9 +129,13 @@ static void lvgl_task(void *arg)
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, LV_TICK_PERIOD_MS * 1000));
 
     printf("LVGL与定时器初始化完成\n");
-
-    // 加载LVGL widgets示例
-    lv_demo_widgets();
+    printf("scr_act_height() %d\n",scr_act_height());
+    printf("scr_act_width() %d\n",scr_act_width());
+    printf("LVGL与定时器初始化完成\n");
+    
+    // // 加载LVGL widgets示例
+    // lv_demo_widgets();
+    lv_mainstart();
     printf("LVGL Widgets demo加载完成\n");
 
     // LVGL任务循环
@@ -155,7 +161,7 @@ void app_main(void)
     qmi8658_init(); // 初始化qmi8658芯片
     wifi_init();
     // 创建LVGL任务
-    // xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
+    xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
     // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 
 }

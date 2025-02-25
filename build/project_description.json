@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "main",
-    "project_version":    "20f54f2-dirty",
+    "project_version":    "aea66ab-dirty",
     "project_path":       "E:/esp32_project/esp32_4.4",
     "idf_path":           "E:/esp_idf_v4.4/v4.4.8/esp-idf",
     "build_dir":          "E:/esp32_project/esp32_4.4/build",
@@ -908,7 +908,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "E:/esp32_project/esp32_4.4/build/esp-idf/main/libmain.a",
-            "sources": [ "E:/esp32_project/esp32_4.4/main/main.c" ],
+            "sources": [ "E:/esp32_project/esp32_4.4/main/main.c", "E:/esp32_project/esp32_4.4/main/my_gui.c", "E:/esp32_project/esp32_4.4/main/img_cool.c", "E:/esp32_project/esp32_4.4/main/img_dry.c", "E:/esp32_project/esp32_4.4/main/img_warm.c", "E:/esp32_project/esp32_4.4/main/my_weather.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
