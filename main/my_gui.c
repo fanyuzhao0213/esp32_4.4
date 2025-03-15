@@ -5,7 +5,10 @@
 #endif
 
 #include "my_gui.h"
+#include "gui_guider.h"
+#include "custom.h"
 
+lv_ui guider_ui;
 
 
 
@@ -145,7 +148,7 @@ static void lv_example_imgbtn(void)
     lv_label_set_text(label_dry, "Dry");                                                /* 设置文本 */
     lv_obj_set_style_text_font(label_dry, font, 0);                                     /* 设置字体 */
     lv_obj_align_to(label_dry, imgbtn_dry, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);             /* 设置位置 */
-    
+
     /* 线条（分割线） */
     lv_obj_t *line_left = lv_line_create(obj);                                          /* 创建线条 */
     lv_line_set_points(line_left, line_points, 2);                                      /* 设置线条坐标点 */
@@ -157,7 +160,7 @@ static void lv_example_imgbtn(void)
     lv_obj_set_style_line_color(line_right, lv_color_hex(0xc6c6c6),LV_STATE_DEFAULT);   /* 设置线条颜色 */
     lv_obj_align(line_right, LV_ALIGN_CENTER, scr_act_width()/6, 0);                    /* 设置位置 */
 
-    
+
     #endif
 
     // 初始化图像对象
@@ -169,7 +172,6 @@ static void lv_example_imgbtn(void)
     // 设置缩放比例
     lv_img_set_zoom(img, zoom_factor);
     lv_obj_center(img);
-
 }
 
 /**
@@ -179,7 +181,8 @@ static void lv_example_imgbtn(void)
  */
 void lv_mainstart(void)
 {
-    lv_example_imgbtn();
+    //lv_example_imgbtn();
+    setup_ui(&guider_ui);
 }
 
 

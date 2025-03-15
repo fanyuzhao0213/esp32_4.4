@@ -1,6 +1,6 @@
 /* Automatically generated file; DO NOT EDIT */
 /* Espressif IoT Development Framework Linker Script */
-/* Generated from: E:\esp_idf_v4.4\v4.4.8\esp-idf\components\esp_system\ld\esp32s3\sections.ld.in */
+/* Generated from: F:\esp_idf_4.4.8\v4.4.8\esp-idf\components\esp_system\ld\esp32s3\sections.ld.in */
 
 /*
  * SPDX-FileCopyrightText: 2021 Espressif Systems (Shanghai) CO LTD
@@ -392,8 +392,8 @@ SECTIONS
     *(.ext_ram.bss*)
 
     *(EXCLUDE_FILE(*libbt.a *libbtdm_app.a) .bss EXCLUDE_FILE(*libbt.a *libbtdm_app.a) .bss.*)
-    *(.ext_ram.bss .ext_ram.bss.*)
     *(.dynbss .dynsbss .gnu.linkonce.b .gnu.linkonce.b.* .gnu.linkonce.sb .gnu.linkonce.sb.* .gnu.linkonce.sb2 .gnu.linkonce.sb2.* .sbss .sbss.* .sbss2 .sbss2.* .scommon .share.mem)
+    *(.ext_ram.bss .ext_ram.bss.*)
     *(EXCLUDE_FILE(*libbt.a *libbtdm_app.a) COMMON)
     . = ALIGN(4);
     _bt_bss_start = ABSOLUTE(.);
