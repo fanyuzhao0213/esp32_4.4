@@ -132,7 +132,7 @@ static void lvgl_task(void *arg)
     printf("scr_act_height() %d\n",scr_act_height());
     printf("scr_act_width() %d\n",scr_act_width());
     printf("LVGL与定时器初始化完成\n");
-    
+
     // // 加载LVGL widgets示例
     // lv_demo_widgets();
     lv_mainstart();

@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "main",
-    "project_version":    "bda86dc-dirty",
+    "project_version":    "8c3130f-dirty",
     "project_path":       "G:/test_project/esp32_4.4",
     "idf_path":           "F:/esp_idf_4.4.8/v4.4.8/esp-idf",
     "build_dir":          "G:/test_project/esp32_4.4/build",
@@ -908,7 +908,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "G:/test_project/esp32_4.4/build/esp-idf/main/libmain.a",
-            "sources": [ "G:/test_project/esp32_4.4/main/GUI/custom/custom.c", "G:/test_project/esp32_4.4/main/GUI/generated/events_init.c", "G:/test_project/esp32_4.4/main/GUI/generated/gui_guider.c", "G:/test_project/esp32_4.4/main/GUI/generated/guider_fonts/lv_font_simsun_12.c", "G:/test_project/esp32_4.4/main/GUI/generated/setup_scr_screen_2.c", "G:/test_project/esp32_4.4/main/GUI/generated/setup_scr_screen_home.c", "G:/test_project/esp32_4.4/main/bmp_BeiJing_BaiTian.c", "G:/test_project/esp32_4.4/main/img_cool.c", "G:/test_project/esp32_4.4/main/img_dry.c", "G:/test_project/esp32_4.4/main/img_warm.c", "G:/test_project/esp32_4.4/main/main.c", "G:/test_project/esp32_4.4/main/my_gui.c", "G:/test_project/esp32_4.4/main/my_weather.c" ],
+            "sources": [ "G:/test_project/esp32_4.4/main/GUI/custom/custom.c", "G:/test_project/esp32_4.4/main/GUI/generated/events_init.c", "G:/test_project/esp32_4.4/main/GUI/generated/gui_guider.c", "G:/test_project/esp32_4.4/main/GUI/generated/guider_fonts/lv_font_simsun_12.c", "G:/test_project/esp32_4.4/main/GUI/generated/images/_bmp_BeiJing1_320x240.c", "G:/test_project/esp32_4.4/main/GUI/generated/setup_scr_screen_2.c", "G:/test_project/esp32_4.4/main/GUI/generated/setup_scr_screen_3.c", "G:/test_project/esp32_4.4/main/GUI/generated/setup_scr_screen_home.c", "G:/test_project/esp32_4.4/main/bmp_BeiJing_BaiTian.c", "G:/test_project/esp32_4.4/main/img_cool.c", "G:/test_project/esp32_4.4/main/img_dry.c", "G:/test_project/esp32_4.4/main/img_warm.c", "G:/test_project/esp32_4.4/main/main.c", "G:/test_project/esp32_4.4/main/my_gui.c", "G:/test_project/esp32_4.4/main/my_weather.c" ],
             "include_dirs": [ ".", "GUI/custom", "GUI/generated", "GUI/generated/guider_customer_fonts", "GUI/generated/guider_fonts", "GUI/generated/images" ]
         },
         "mbedtls": {

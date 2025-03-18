@@ -1,6 +1,9 @@
 #include "wifi_smartconfig.h"
 #include "rtc.h"
 
+uint8_t g_my_lvgl_hours = 0;
+uint8_t g_my_lvgl_minutes = 0;
+uint8_t g_my_lvgl_seconds = 0;
 
 /* 定义事件 */
 static EventGroupHandle_t s_wifi_event_group;
@@ -210,11 +213,11 @@ void obtain_time(void)
     err = sys_rtc_get_time();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "获取时间失败");
-    }     
-    
+    }
+
     initialize_sntp();
     // 等待时间同步
-    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) 
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
     {
         ESP_LOGI(TAG, "Waiting for system time to be set...");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -230,7 +233,7 @@ void obtain_time(void)
     // 获取当前时间
     time(&now);
     localtime_r(&now, &timeinfo);
-    
+
     // 格式化并打印时间
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time is: %s", strftime_buf);
@@ -258,3 +261,19 @@ void obtain_time(void)
     }
 }
 
+
+void sync_systime_to_mytime(void)
+{
+    time_t now;
+    struct tm timeinfo;
+    // 获取当前时间
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    // 提取时间信息并设置到RTC
+    g_my_lvgl_hours = timeinfo.tm_hour;
+    g_my_lvgl_minutes = timeinfo.tm_min;
+    g_my_lvgl_seconds = timeinfo.tm_sec;
+
+    printf("SYNC : 小时: %02d, 分钟: %02d, 秒: %02d\r\n", g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds);
+}

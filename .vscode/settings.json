@@ -8,6 +8,8 @@
         "rtc.h": "c",
         "qmi8658.h": "c",
         "lvgl.h": "c",
-        "my_gui.h": "c"
+        "my_gui.h": "c",
+        "lv_meter.h": "c",
+        "algorithm": "c"
     }
 }

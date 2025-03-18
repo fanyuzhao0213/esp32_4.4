@@ -1,4 +1,5 @@
 #include "mqtt.h"
+#include "rtc.h"
 
 static const char* TAG = "MQTT";
 
@@ -82,13 +83,15 @@ void mqtt_pub_task(void *pvParameters)
 {
     int count = 0;
     static char mqtt_pub_buff[64];
-
+    esp_err_t err;
     while (1) {
+        #if 0
         if (s_is_mqtt_connected) {
             snprintf(mqtt_pub_buff, sizeof(mqtt_pub_buff), "{\"count\":\"%d\"}", count);
             esp_mqtt_client_publish(s_mqtt_client, MQTT_PUBLIC_TOPIC, mqtt_pub_buff, 0, 1, 0);
             count++;
         }
+        #endif
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

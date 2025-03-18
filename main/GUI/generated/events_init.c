@@ -183,7 +183,80 @@ static void screen_2_back_event_handler(lv_event_t *e)
 	}
 }
 
+static void screen_2_next_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+			if (guider_ui.screen_3_del == true)
+				setup_scr_screen_3(&guider_ui);
+			lv_scr_load_anim(guider_ui.screen_3, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_2_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
 void events_init_screen_2(lv_ui *ui)
 {
 	lv_obj_add_event_cb(ui->screen_2_back, screen_2_back_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui->screen_2_next, screen_2_next_event_handler, LV_EVENT_ALL, NULL);
+}
+
+static void screen_3_back_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+			if (guider_ui.screen_2_del == true)
+				setup_scr_screen_2(&guider_ui);
+			lv_scr_load_anim(guider_ui.screen_2, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_3_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+static void screen_3_backbtn_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+			if (guider_ui.screen_2_del == true)
+				setup_scr_screen_2(&guider_ui);
+			lv_scr_load_anim(guider_ui.screen_2, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_3_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void events_init_screen_3(lv_ui *ui)
+{
+	lv_obj_add_event_cb(ui->screen_3_back, screen_3_back_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui->screen_3_backbtn, screen_3_backbtn_event_handler, LV_EVENT_ALL, NULL);
 }

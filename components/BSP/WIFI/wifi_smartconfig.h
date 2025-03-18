@@ -24,6 +24,10 @@
 #define Timeout_GetWeather_BIT      BIT1
 #define MQTT_CONNECT_BIT            BIT2
 
+extern uint8_t g_my_lvgl_hours;
+extern uint8_t g_my_lvgl_minutes;
+extern uint8_t g_my_lvgl_seconds;
+
 
 extern EventGroupHandle_t g_event_group;        /* 定义事件组 */
 
@@ -31,5 +35,5 @@ extern void wifi_smartconfig_sta(void);
 extern void smartconfig_task(void *param);
 extern void initialize_sntp(void);
 extern void obtain_time(void);
-
+extern void sync_systime_to_mytime(void);
 #endif
