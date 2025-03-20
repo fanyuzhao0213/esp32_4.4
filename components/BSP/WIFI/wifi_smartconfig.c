@@ -1,9 +1,13 @@
 #include "wifi_smartconfig.h"
 #include "rtc.h"
 
+uint32_t g_my_lvgl_year = 0;
+uint32_t g_my_lvgl_month = 0;
+uint32_t g_my_lvgl_day = 0;
 uint8_t g_my_lvgl_hours = 0;
 uint8_t g_my_lvgl_minutes = 0;
 uint8_t g_my_lvgl_seconds = 0;
+char *weekday_str = NULL;       // 获取星期几的字符串
 
 /* 定义事件 */
 static EventGroupHandle_t s_wifi_event_group;
@@ -261,7 +265,8 @@ void obtain_time(void)
     }
 }
 
-
+// 星期几的字符串数组
+const char *weekdays[] = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
 void sync_systime_to_mytime(void)
 {
     time_t now;
@@ -271,9 +276,19 @@ void sync_systime_to_mytime(void)
     localtime_r(&now, &timeinfo);
 
     // 提取时间信息并设置到RTC
+    // 解析当前时间信息
+    g_my_lvgl_year = timeinfo.tm_year + 1900;  // 将 tm_year 转换为标准年份
+    g_my_lvgl_month = timeinfo.tm_mon + 1;     // 将 tm_mon 转换为标准月份
+    g_my_lvgl_day = timeinfo.tm_mday;          // tm_mday 是当前日期（1-31）
     g_my_lvgl_hours = timeinfo.tm_hour;
     g_my_lvgl_minutes = timeinfo.tm_min;
     g_my_lvgl_seconds = timeinfo.tm_sec;
+        // 解析星期几
+    int weekday = timeinfo.tm_wday;  // tm_wday 的范围是 0（星期日）到 6（星期六）
+    weekday_str = weekdays[weekday];  // 获取星期几的字符串
 
-    printf("SYNC : 小时: %02d, 分钟: %02d, 秒: %02d\r\n", g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds);
+    // 打印时间信息
+    printf("SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
+           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
+           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
 }

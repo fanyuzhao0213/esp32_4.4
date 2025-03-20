@@ -27,8 +27,10 @@
 extern uint8_t g_my_lvgl_hours;
 extern uint8_t g_my_lvgl_minutes;
 extern uint8_t g_my_lvgl_seconds;
-
-
+extern uint32_t g_my_lvgl_year;
+extern uint32_t g_my_lvgl_month;
+extern uint32_t g_my_lvgl_day;
+extern char *weekday_str;  // 获取星期几的字符串
 extern EventGroupHandle_t g_event_group;        /* 定义事件组 */
 
 extern void wifi_smartconfig_sta(void);

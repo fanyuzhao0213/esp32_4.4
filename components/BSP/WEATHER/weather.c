@@ -26,60 +26,172 @@ static const char *HTTP_TAG = "Weather";
 #define Strat "-1"
 #define Days "5"
 
+// 定义全局变量
+char *City_Name = NULL;  // 用于存储 CITY 的 name
+int daily_weather_count = 0;  // 实际获取到的天气信息数量
+WeatherInfo daily_weather[MAX_DAYS];
+
 static void freeBuffer(char* buf, int bufSize)
 {
 	for( int i = 0; i < bufSize; i ++ )
 		buf[i] = NULL;
 }
 
+// 获取每日天气预报并保存到全局变量
 void parse_weather_data(const char *json_data)
 {
-    cJSON *root = cJSON_Parse(json_data);
-    if (root == NULL) {
-        ESP_LOGE(HTTP_TAG, "Error parsing JSON");
+    if (json_data == NULL) {
+        ESP_LOGE(HTTP_TAG, "Invalid JSON data");
         return;
     }
 
-    // 获取结果数组
-    cJSON *results = cJSON_GetObjectItem(root, "results");
-    if (cJSON_IsArray(results)) {
-        int results_size = cJSON_GetArraySize(results);
-        for (int i = 0; i < results_size; i++) {
-            cJSON *result = cJSON_GetArrayItem(results, i);
-
-            // 获取地点信息
-            cJSON *location = cJSON_GetObjectItem(result, "location");
-            if (location) {
-                const char *name = cJSON_GetObjectItem(location, "name")->valuestring;
-                ESP_LOGI(HTTP_TAG, "Location: %s", name);
-            }
-
-            // 获取每日天气预报
-            cJSON *daily = cJSON_GetObjectItem(result, "daily");
-            if (cJSON_IsArray(daily)) {
-                int daily_size = cJSON_GetArraySize(daily);
-                for (int j = 0; j < daily_size; j++) {
-                    cJSON *day = cJSON_GetArrayItem(daily, j);
-
-                    const char *date = cJSON_GetObjectItem(day, "date")->valuestring;
-                    const char *text_day = cJSON_GetObjectItem(day, "text_day")->valuestring;
-                    const char *high = cJSON_GetObjectItem(day, "high")->valuestring;
-                    const char *low = cJSON_GetObjectItem(day, "low")->valuestring;
-                    const char *rainfall = cJSON_GetObjectItem(day, "rainfall")->valuestring;
-                    const char *humidity = cJSON_GetObjectItem(day, "humidity")->valuestring;
-                    const char *wind_speed = cJSON_GetObjectItem(day, "wind_speed")->valuestring;
-                    const char *wind_direction = cJSON_GetObjectItem(day, "wind_direction")->valuestring;
-
-                    // 打印所有天气信息
-                    ESP_LOGI(HTTP_TAG, "Date: %s, Text Day: %s, High: %s, Low: %s, Rainfall: %s, Humidity: %s, Wind Speed: %s, Wind Direction: %s",
-                             date, text_day, high, low, rainfall, humidity, wind_speed, wind_direction);
-                }
-            }
-        }
+    // 解析 JSON 数据
+    cJSON *root = cJSON_Parse(json_data);
+    if (root == NULL) {
+        ESP_LOGE(HTTP_TAG, "Failed to parse JSON data");
+        return;
     }
-    cJSON_Delete(root); // 释放内存
-}
 
+    // 获取 "results" 数组
+    cJSON *results = cJSON_GetObjectItem(root, "results");
+    if (!cJSON_IsArray(results)) {
+        ESP_LOGE(HTTP_TAG, "Invalid 'results' field in JSON");
+        cJSON_Delete(root);
+        return;
+    }
+
+    // 获取第一个结果（假设只有一个结果）
+    cJSON *result = cJSON_GetArrayItem(results, 0);
+    if (result == NULL) {
+        ESP_LOGE(HTTP_TAG, "No result found in 'results' array");
+        cJSON_Delete(root);
+        return;
+    }
+
+// 获取 "location" 对象
+    cJSON *location = cJSON_GetObjectItem(result, "location");
+    if (location == NULL) {
+        printf("Invalid 'location' field in JSON\n");
+        cJSON_Delete(root);
+        return;
+    }
+
+    // 获取 "name" 字段
+    cJSON *name = cJSON_GetObjectItem(location, "name");
+    if (cJSON_IsString(name)) {
+        // 释放旧的全局变量内存（如果已分配）
+        if (City_Name != NULL) {
+            free(City_Name);
+            City_Name = NULL;
+        }
+
+        // 分配内存并复制 name 的值
+        City_Name = strdup(name->valuestring);
+        if (City_Name == NULL) {
+            printf("Failed to allocate memory for location name\n");
+            cJSON_Delete(root);
+            return;
+        }
+
+        printf("Location Name: %s\n", City_Name);
+    } else {
+        printf("Invalid 'name' field in JSON\n");
+    }
+
+    // 获取 "daily" 数组
+    cJSON *daily = cJSON_GetObjectItem(result, "daily");
+    if (!cJSON_IsArray(daily)) {
+        ESP_LOGE(HTTP_TAG, "Invalid 'daily' field in JSON");
+        cJSON_Delete(root);
+        return;
+    }
+
+    // 遍历每日天气信息
+    int daily_size = cJSON_GetArraySize(daily);
+    daily_weather_count = (daily_size > MAX_DAYS) ? MAX_DAYS : daily_size;  // 限制保存的天数
+
+    for (int j = 0; j < daily_weather_count; j++) {
+        cJSON *day = cJSON_GetArrayItem(daily, j);
+        if (day == NULL) {
+            ESP_LOGE(HTTP_TAG, "Failed to get day %d from 'daily' array", j);
+            continue;
+        }
+
+        // 解析并保存天气信息
+        cJSON *item = NULL;
+
+        item = cJSON_GetObjectItem(day, "date");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].date, sizeof(daily_weather[j].date), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].date, sizeof(daily_weather[j].date), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "text_day");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].text_day, sizeof(daily_weather[j].text_day), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].text_day, sizeof(daily_weather[j].text_day), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "text_night");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].text_night, sizeof(daily_weather[j].text_night), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].text_night, sizeof(daily_weather[j].text_night), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "high");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].high, sizeof(daily_weather[j].high), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].high, sizeof(daily_weather[j].high), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "low");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].low, sizeof(daily_weather[j].low), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].low, sizeof(daily_weather[j].low), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "rainfall");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].rainfall, sizeof(daily_weather[j].rainfall), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].rainfall, sizeof(daily_weather[j].rainfall), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "humidity");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].humidity, sizeof(daily_weather[j].humidity), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].humidity, sizeof(daily_weather[j].humidity), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "wind_speed");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].wind_speed, sizeof(daily_weather[j].wind_speed), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].wind_speed, sizeof(daily_weather[j].wind_speed), "N/A");
+        }
+
+        item = cJSON_GetObjectItem(day, "wind_direction");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].wind_direction, sizeof(daily_weather[j].wind_direction), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].wind_direction, sizeof(daily_weather[j].wind_direction), "N/A");
+        }
+
+        // 打印解析的天气信息
+        ESP_LOGI(HTTP_TAG, "Date: %s, Text Day: %s, Text Night: %s, High: %s, Low: %s, Rainfall: %s, Humidity: %s, Wind Speed: %s, Wind Direction: %s",
+                 daily_weather[j].date, daily_weather[j].text_day, daily_weather[j].text_night, daily_weather[j].high, daily_weather[j].low,
+                 daily_weather[j].rainfall, daily_weather[j].humidity, daily_weather[j].wind_speed, daily_weather[j].wind_direction);
+    }
+
+    // 释放 JSON 对象
+    cJSON_Delete(root);
+}
 
 /** HTTP functions **/
 void http_client_task(void *pvParameters)

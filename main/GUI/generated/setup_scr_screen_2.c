@@ -29,24 +29,42 @@ int screen_2_analog_clock_sec_value = 0;
 // 定时器回调函数，用于更新时间
 void screen_2_analog_clock_timer(lv_timer_t *timer)
 {
-    // 更新时间
-    sync_systime_to_mytime();
-    // printf("mytime : 小时: %02d, 分钟: %02d, 秒: %02d", g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds);
-    if(g_my_lvgl_hours >= 12)
-    {
-        g_my_lvgl_hours = g_my_lvgl_hours - 12;
-    }
-    // 检查控件是否有效
-    if (lv_obj_is_valid(meter))
-    {
-        // 设置时针、分针和秒针的位置
-        // 时针每小时移动30度，每分钟移动0.5度
-        lv_meter_set_indicator_value(meter, indic_hour, g_my_lvgl_hours * 30 + g_my_lvgl_minutes / 2);
-        // 分针每分钟移动6度
-        lv_meter_set_indicator_value(meter, indic_min, g_my_lvgl_minutes * 6);
-        // 秒针每秒移动6度
-        lv_meter_set_indicator_value(meter, indic_sec, g_my_lvgl_seconds * 6);
-    }
+	if(current_screen == SCREEN_2)
+	{
+		uint8_t m_hours = 0;
+		// 更新时间
+		sync_systime_to_mytime();
+		// printf("mytime : 小时: %02d, 分钟: %02d, 秒: %02d", g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds);
+		if(g_my_lvgl_hours >= 12)
+		{
+			m_hours = g_my_lvgl_hours - 12;
+		}
+		// 检查控件是否有效
+		if (lv_obj_is_valid(meter))
+		{
+			// 设置时针、分针和秒针的位置
+			// 时针每小时移动30度，每分钟移动0.5度
+			lv_meter_set_indicator_value(meter, indic_hour, m_hours * 30 + g_my_lvgl_minutes / 2);
+			// 分针每分钟移动6度
+			lv_meter_set_indicator_value(meter, indic_min, g_my_lvgl_minutes * 6);
+			// 秒针每秒移动6度
+			lv_meter_set_indicator_value(meter, indic_sec, g_my_lvgl_seconds * 6);
+		}
+	}
+	else if(current_screen == SCREEN_3)
+	{
+		char temp_buf[20] = {0};
+		sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
+		lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
+		lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
+		lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
+		lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
+		lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
+	}
 }
 
 #include "lvgl/lvgl.h"
