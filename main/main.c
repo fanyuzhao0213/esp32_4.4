@@ -20,9 +20,17 @@
 #include "QMI8658.h"
 #include "rtc.h"
 #include "SD_MMC.h"
+#include "esp_spiffs.h"
+#include "esp_vfs.h"
+#include "nvs_flash.h"
 
 #include "my_gui.h"
 
+
+#define DEFAULT_FD_NUM          5
+#define DEFAULT_MOUNT_POINT     "/spiffs"
+#define WRITE_DATA              "I have a daughter, and her name is Fan Hexi.\r\n"
+static const char               *TAG = "spiffs";
 /*********************
  *      DEFINES
  *********************/
@@ -38,6 +46,175 @@ EventGroupHandle_t g_event_group;        /* 定义事件组 */
 static void lv_tick_task(void *arg);
 static void lvgl_task(void *arg);
 static void print_chip_info(void);
+
+/**
+ * @brief       SPIFFS 初始化
+ * @param       partition_label: 分区表的分区名称
+ * @param       mount_point: 文件系统关联的文件路径前缀
+ * @param       max_files: 可以同时打开的最大文件数
+ * @retval      返回 ESP_OK 表示成功，否则返回错误码
+ */
+esp_err_t spiffs_init(char *partition_label, char *mount_point, size_t max_files)
+{
+    /* 配置 SPIFFS 文件系统的各个参数 */
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = mount_point,              // 挂载点路径
+        .partition_label = partition_label,    // 分区标签
+        .max_files = max_files,                // 最大打开文件数
+        .format_if_mount_failed = true,        // 如果挂载失败，是否格式化分区
+    };
+
+    /* 使用上面定义的设置来初始化和挂载 SPIFFS 文件系统 */
+    esp_err_t ret_val = esp_vfs_spiffs_register(&conf);
+
+    /* 判断 SPIFFS 挂载及初始化是否成功 */
+    if (ret_val != ESP_OK)
+    {
+        if (ret_val == ESP_FAIL)
+        {
+            printf("Failed to mount or format filesystem\n");  // 挂载或格式化失败
+        }
+        else if (ret_val == ESP_ERR_NOT_FOUND)
+        {
+            printf("Failed to find SPIFFS partition\n");       // 未找到 SPIFFS 分区
+        }
+        else
+        {
+            printf("Failed to initialize SPIFFS (%s)\n", esp_err_to_name(ret_val));  // 其他错误
+        }
+
+        return ESP_FAIL;  // 返回失败状态
+    }
+
+    /* 打印 SPIFFS 存储信息 */
+    size_t total = 0, used = 0;
+    ret_val = esp_spiffs_info(conf.partition_label, &total, &used);
+
+    if (ret_val != ESP_OK)
+    {
+        ESP_LOGI(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret_val));  // 获取分区信息失败
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);  // 打印分区总大小和已用大小
+    }
+
+    return ret_val;  // 返回初始化结果
+}
+
+/**
+ * @brief       注销 SPIFFS 初始化
+ * @param       partition_label：分区表标识
+ * @retval      返回 ESP_OK 表示成功，否则返回错误码
+ */
+esp_err_t spiffs_deinit(char *partition_label)
+{
+    /* 注销并卸载 SPIFFS 文件系统 */
+    return esp_vfs_spiffs_unregister(partition_label);
+}
+
+void list_spiffs_directory(const char *path)
+{
+    DIR *dir = opendir(path);  // 打开目录
+    if (dir == NULL) {
+        ESP_LOGE(TAG, "Failed to open directory: %s", path);
+        return;
+    }
+
+    ESP_LOGI(TAG, "Listing directory: %s", path);
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {  // 遍历目录项
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (stat(full_path, &st) == 0) {  // 获取文件/目录信息
+            if (S_ISDIR(st.st_mode)) {
+                ESP_LOGI(TAG, "DIR: %s", entry->d_name);  // 如果是目录
+            } else {
+                ESP_LOGI(TAG, "FILE: %s (size: %ld)", entry->d_name, st.st_size);  // 如果是文件
+            }
+        } else {
+            ESP_LOGE(TAG, "Failed to stat: %s", entry->d_name);
+        }
+    }
+
+    closedir(dir);  // 关闭目录
+}
+
+/**
+ * @brief       测试 SPIFFS 文件系统
+ * @param       无
+ * @retval      无
+ */
+void spiffs_test(void)
+{
+    ESP_LOGI(TAG, "Opening file");
+
+    /* 尝试以只读模式打开文件，检查文件是否存在 */
+    FILE* f = fopen("/spiffs/hello.txt", "r");
+    if (f == NULL)
+    {
+        /* 文件不存在，尝试创建并写入数据 */
+        ESP_LOGI(TAG, "File does not exist, creating a new file...");
+        f = fopen("/spiffs/hello.txt", "w");  // 以只写模式创建文件
+        if (f == NULL)
+        {
+            ESP_LOGE(TAG, "Failed to create file for writing");  // 文件创建失败
+            return;
+        }
+
+        /* 向新创建的文件中写入数据 */
+        fprintf(f, WRITE_DATA);
+        fclose(f);  // 关闭文件
+        ESP_LOGI(TAG, "File created and data written");  // 文件创建并写入完成
+    }
+    else
+    {
+        /* 文件已存在，直接关闭文件 */
+        fclose(f);
+        ESP_LOGI(TAG, "File already exists");  // 文件已存在
+    }
+
+    /* 重命名之前检查目标文件是否存在 */
+    struct stat st;
+    if (stat("/spiffs/foo.txt", &st) == 0)  // 获取文件信息，成功返回 0
+    {
+        /* 如果目标文件存在，则删除它 */
+        unlink("/spiffs/foo.txt");  // 删除文件
+        ESP_LOGI(TAG, "Existing target file deleted");  // 目标文件已删除
+    }
+
+    /* 重命名创建的文件 */
+    ESP_LOGI(TAG, "Renaming file");
+    if (rename("/spiffs/hello.txt", "/spiffs/foo.txt") != 0)  // 重命名文件
+    {
+        ESP_LOGE(TAG, "Rename failed");  // 重命名失败
+        return;
+    }
+
+    /* 打开重命名的文件并读取内容 */
+    ESP_LOGI(TAG, "Reading file");
+    f = fopen("/spiffs/foo.txt", "r");  // 以只读模式打开文件
+    if (f == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for reading");  // 文件打开失败
+        return;
+    }
+
+    char line[64];
+    fgets(line, sizeof(line), f);  // 读取文件内容到 line 缓冲区
+    fclose(f);  // 关闭文件
+
+    char* pos = strchr(line, '\n');  // 查找换行符 '\n' 的位置
+    if (pos)
+    {
+        *pos = '\0';  // 将换行符替换为字符串结束符 '\0'
+    }
+
+    ESP_LOGI(TAG, "Read from file: '%s'", line);  // 打印读取的文件内容
+}
 
 /**********************
  *   STATIC FUNCTIONS
@@ -147,19 +324,27 @@ static void lvgl_task(void *arg)
     }
 }
 
+void my_spiffs_init(void)
+{
+    spiffs_init("storage", DEFAULT_MOUNT_POINT, DEFAULT_FD_NUM);    /* SPIFFS初始化 */
+    spiffs_test();
+    list_spiffs_directory("/spiffs");
+    spiffs_deinit("storage");
+}
 /**********************
  *   APPLICATION MAIN
  **********************/
 
-static const char *TAG = "MAIN"; // 定义日志标签
+static const char *MAINTAG = "MAIN"; // 定义日志标签
 i2c_obj_t i2c1_master;
 
 void app_main(void)
 {
     print_chip_info();                  // 打印芯片信息和重启原因
     SD_Init();
+    my_spiffs_init();
     ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
-    ESP_LOGI(TAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
+    ESP_LOGI(MAINTAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
     qmi8658_init(); // 初始化qmi8658芯片
     wifi_init();
     // 创建LVGL任务
