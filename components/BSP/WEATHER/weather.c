@@ -77,7 +77,6 @@ void parse_weather_data(const char *json_data)
             }
         }
     }
-
     cJSON_Delete(root); // 释放内存
 }
 
@@ -144,12 +143,15 @@ void http_client_task(void *pvParameters)
                 }
             }
             esp_http_client_close(client);
+            esp_http_client_cleanup(client);  // 释放 HTTP 客户端资源
         }
         timecount++;
         if(timecount >= WEATHER_UPDATE_TIME)
         {
             timecount = 0;
             weather_update_flag = 1;
+            size_t free_heap = esp_get_free_heap_size();
+            ESP_LOGI(HTTP_TAG,"Free heap size: %d bytes\n", free_heap);
         }
         vTaskDelay(1000);       //1S
     }

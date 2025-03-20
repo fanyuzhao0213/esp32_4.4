@@ -19,6 +19,7 @@
 #include "iic.h"
 #include "QMI8658.h"
 #include "rtc.h"
+#include "SD_MMC.h"
 
 #include "my_gui.h"
 
@@ -156,6 +157,7 @@ i2c_obj_t i2c1_master;
 void app_main(void)
 {
     print_chip_info();                  // 打印芯片信息和重启原因
+    SD_Init();
     ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
     ESP_LOGI(TAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
     qmi8658_init(); // 初始化qmi8658芯片

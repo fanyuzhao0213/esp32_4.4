@@ -10,6 +10,8 @@
         "lvgl.h": "c",
         "my_gui.h": "c",
         "lv_meter.h": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "SD_MMC.C": "cpp",
+        "vector": "cpp"
     }
 }
