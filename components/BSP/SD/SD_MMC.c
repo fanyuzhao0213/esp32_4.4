@@ -47,6 +47,19 @@ esp_err_t s_example_read_file(const char *path)
     return ESP_OK;
 }
 
+bool is_mounted(const char* mount_point) {
+    struct stat buffer;
+    return (stat(mount_point, &buffer) == 0); // 如果挂载点存在，stat 返回 0
+}
+
+void check_sd_card_mount() {
+    const char* mount_point = "/sdcard";
+    if (is_mounted(mount_point)) {
+        printf("SD 卡已正确挂载到 %s\n", mount_point);
+    } else {
+        printf("SD 卡未挂载到 %s\n", mount_point);
+    }
+}
 // 初始化SD卡
 void SD_Init(void)
 {
@@ -96,6 +109,39 @@ void SD_Init(void)
     // 打印SD卡信息
     sdmmc_card_print_info(stdout, card);
     SDCard_Size = ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024);
+
+    const char my_listpath[] =  "/sdcard/MY_IMAGE/WHITE";
+    list_files_in_directory(MOUNT_POINT);
+    list_files_in_directory(my_listpath);
+}
+
+// 列出 SD 卡中指定目录下的所有文件
+void list_files_in_directory(const char *path)
+{
+    DIR *dir;
+    struct dirent *entry;
+
+    // 打开目录
+    dir = opendir(path);
+    if (dir == NULL) {
+        ESP_LOGE(SD_TAG, "无法打开目录: %s", path);
+        return;
+    }
+
+    ESP_LOGI(SD_TAG, "列出目录: %s", path);
+
+    // 遍历目录中的每个条目
+    while ((entry = readdir(dir)) != NULL) {
+        // 打印文件或目录的名称
+        if (entry->d_type == DT_REG) {  // 普通文件
+            ESP_LOGI(SD_TAG, "文件: %s", entry->d_name);
+        } else if (entry->d_type == DT_DIR) {  // 目录
+            ESP_LOGI(SD_TAG, "目录: %s", entry->d_name);
+        }
+    }
+
+    // 关闭目录
+    closedir(dir);
 }
 
 // 获取Flash大小

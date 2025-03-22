@@ -11,7 +11,6 @@
 #include <errno.h>
 #include "esp_flash.h"
 
-
 #define MAX_FILE_NAME_SIZE 256  // 定义文件名最大长度
 #define MAX_PATH_SIZE 512      // 定义完整路径的最大长度
 
@@ -84,4 +83,6 @@ FILE* Open_File(const char *file_path);
  * @return uint16_t 返回找到的文件数量
  */
 uint16_t Folder_retrieval(const char* directory, const char* fileExtension, char File_Name[][MAX_FILE_NAME_SIZE], uint16_t maxFiles);
-
+void list_files_in_directory(const char *path);
+void test_lvgl_fs();
+void lv_fs_if_init(void);

@@ -11,10 +11,28 @@
 #include "custom.h"
 #include "BSP/RTC/rtc.h"
 #include "BSP/WIFI/wifi_smartconfig.h"
+#include <sys/stat.h> // 用于 stat 函数
+#include <stdbool.h>  // 用于 bool 类型
 
+/**
+ * @brief 检查指定路径的文件是否存在
+ * @param path 文件路径
+ * @return true 文件存在
+ * @return false 文件不存在
+ */
 
 // 创建一个表盘对象
 lv_obj_t *meter;
+// 创建一个图像路径对象
+char *image_jinri_path; // 用于存储完整路径
+char *image_mingri_path; // 用于存储完整路径
+char *image_houri_path; // 用于存储完整路径
+bool image_set = false;
+// 静态变量，用于保存上一次设置的路径
+static char last_image_path_tianqi[256] = {0};
+static char last_image_path_jintian[256] = {0};
+static char last_image_path_mingtian[256] = {0};
+static char last_image_path_houtian[256] = {0};
 
 // 声明时针、分针和秒针的指针变量
 static lv_meter_indicator_t *indic_hour = NULL;
@@ -26,18 +44,99 @@ int screen_2_analog_clock_hour_value = 0;
 int screen_2_analog_clock_min_value = 0;
 int screen_2_analog_clock_sec_value = 0;
 
+void check_file_access(const char *path) {
+    lv_fs_file_t file;
+    lv_fs_res_t res;
+
+    // 打开文件
+    res = lv_fs_open(&file, path, LV_FS_MODE_RD);
+    if (res != LV_FS_RES_OK) {
+        printf("Failed to open file: %s (error code: %d)\n", path, res);
+        return;
+    }
+
+uint32_t file_size = 0;
+
+// 将文件指针移动到文件末尾
+res = lv_fs_seek(&file, 0, LV_FS_SEEK_END);
+if (res != LV_FS_RES_OK) {
+    printf("Failed to seek to end of file\n");
+    lv_fs_close(&file);
+    return;
+}
+
+// 获取文件指针位置（即文件大小）
+res = lv_fs_tell(&file, &file_size);
+if (res != LV_FS_RES_OK) {
+    printf("Failed to get file size\n");
+    lv_fs_close(&file);
+    return;
+}
+
+// 将文件指针移动回文件开头
+res = lv_fs_seek(&file, 0, LV_FS_SEEK_SET);
+if (res != LV_FS_RES_OK) {
+    printf("Failed to seek to start of file\n");
+    lv_fs_close(&file);
+    return;
+}
+
+printf("File size: %u bytes\n", file_size);
+
+    // 读取文件内容
+    uint8_t *buffer = (uint8_t *)lv_mem_alloc(file_size);
+    if (buffer == NULL) {
+        printf("Failed to allocate memory for file buffer\n");
+        lv_fs_close(&file);
+        return;
+    }
+
+    uint32_t bytes_read;
+    res = lv_fs_read(&file, buffer, file_size, &bytes_read);
+    if (res != LV_FS_RES_OK || bytes_read != file_size) {
+        printf("Failed to read file: %s (error code: %d, bytes read: %u)\n", path, res, bytes_read);
+    } else {
+        printf("Successfully read file: %s (%u bytes)\n", path, bytes_read);
+    }
+
+    // 释放缓冲区
+    lv_mem_free(buffer);
+
+    // 关闭文件
+    lv_fs_close(&file);
+}
+
+
+// 获取图像路径
+const char* get_image_path(char* weather_code)
+{
+	static char path[256]; // 静态分配，避免被释放
+    // 根据 weather_code 生成文件名
+    // snprintf(path, sizeof(path), "/sdcard/3d_40/BMP_%s.c", weather_code);
+	snprintf(path, sizeof(path), "S:/MY_IMAGE/WHITE/%s@1x.png", weather_code);
+	// snprintf(path, sizeof(path), "/sdcard/MY_IMAGE/WHITE/%s@1x.png", weather_code);
+    return path;
+}
+
 // 定时器回调函数，用于更新时间
 void screen_2_analog_clock_timer(lv_timer_t *timer)
 {
+	// printf("current_screen: %d\r\n",current_screen);
 	if(current_screen == SCREEN_2)
 	{
 		uint8_t m_hours = 0;
 		// 更新时间
 		sync_systime_to_mytime();
-		// printf("mytime : 小时: %02d, 分钟: %02d, 秒: %02d", g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds);
+		    // 打印时间信息
+   		printf("SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
+           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
+           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
 		if(g_my_lvgl_hours >= 12)
 		{
 			m_hours = g_my_lvgl_hours - 12;
+		}else
+		{
+			m_hours = g_my_lvgl_hours;
 		}
 		// 检查控件是否有效
 		if (lv_obj_is_valid(meter))
@@ -53,17 +152,100 @@ void screen_2_analog_clock_timer(lv_timer_t *timer)
 	}
 	else if(current_screen == SCREEN_3)
 	{
-		char temp_buf[20] = {0};
-		sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
-		lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
-		lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
-		lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
-		lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
-		lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
+		// sync_systime_to_mytime();
+		// /*明天和后天的日期显示*/
+		// char temp_buf[50] = {0};
+        // strncpy(temp_buf, daily_weather[1].date + 5, 5);
+        // temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
+		// lv_label_set_text(guider_ui.screen_3_label_mingtianriqi,temp_buf);
+		// memset(temp_buf,0,20);
+        // strncpy(temp_buf, daily_weather[2].date + 5, 5);
+        // temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
+		// lv_label_set_text(guider_ui.screen_3_label_houtianriqi,temp_buf);
+
+		// /*今天日期和时间显示*/
+		// sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
+		// lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
+		// lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
+		// lv_label_set_text(guider_ui.screen_3_label_jintianriqi,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
+		// lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
+		// lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
+		// lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
+
+		// /*天气相关显示*/
+		// /* 天气*/
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%s",daily_weather[0].text_day);
+		// lv_label_set_text(guider_ui.screen_3_label_1,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%s°",daily_weather[0].high);
+		// lv_label_set_text(guider_ui.screen_3_label_gaowen,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%s°",daily_weather[0].low);
+		// lv_label_set_text(guider_ui.screen_3_label_diwen,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%s%%",daily_weather[0].humidity);
+		// lv_label_set_text(guider_ui.screen_3_label_jiangshui,temp_buf);
+		// memset(temp_buf,0,20);
+		// sprintf(temp_buf,"%s",daily_weather[0].wind_speed);
+		// lv_label_set_text(guider_ui.screen_3_label_fengsu,temp_buf);
+		// /*风向*/
+		// // 使用 strstr 查找子字符串
+		// if (strstr(daily_weather[0].wind_direction, "无"))
+		// {
+		// 	memset(temp_buf,0,20);
+		// 	sprintf(temp_buf,"%s","无风");
+		// 	lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
+		// }
+		// else
+		// {
+		// 	memset(temp_buf,0,20);
+		// 	sprintf(temp_buf,"%s",daily_weather[0].wind_direction);
+		// 	lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
+		// }
+
+		if(!image_set)
+		{
+			const char *image_jinri_path = get_image_path(daily_weather[0].code_day);
+			const char *image_mingri_path = get_image_path(daily_weather[1].code_day);
+			const char *image_houri_path = get_image_path(daily_weather[2].code_day);
+
+			// 打印图像路径
+			printf("Setting today's image: %s\n", image_jinri_path);
+			printf("Setting tomorrow's image: %s\n", image_mingri_path);
+			printf("Setting day after tomorrow's image: %s\n", image_houri_path);
+
+			// FILE *file = fopen(image_jinri_path, "rb");
+			// if (file) {
+			// 	printf("File exists: image_jinri_path:%s\n",image_jinri_path);
+			// 	fclose(file);
+			// } else {
+			// 	printf("File does not exist: image_jinri_path:%s\n",image_jinri_path);
+			// }
+
+			// 设置图像源
+			lv_img_set_src(guider_ui.screen_3_img_tianqi, image_jinri_path);
+			lv_img_set_src(guider_ui.screen_3_img_jintian, image_jinri_path);
+			lv_img_set_src(guider_ui.screen_3_img_mingtian, image_mingri_path);
+			lv_img_set_src(guider_ui.screen_3_img_houtian, image_houri_path);
+
+			// 强制刷新图像缓存
+			lv_img_cache_invalidate_src(image_jinri_path);
+			lv_img_cache_invalidate_src(image_mingri_path);
+			lv_img_cache_invalidate_src(image_houri_path);
+
+			// 手动刷新 LVGL 对象
+			lv_obj_invalidate(guider_ui.screen_3_img_tianqi);
+			lv_obj_invalidate(guider_ui.screen_3_img_jintian);
+			lv_obj_invalidate(guider_ui.screen_3_img_mingtian);
+			lv_obj_invalidate(guider_ui.screen_3_img_houtian);
+
+			image_set = true;  // 标记图像已设置
+		}
 	}
 }
 

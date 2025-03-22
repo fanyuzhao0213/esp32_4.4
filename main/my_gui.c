@@ -1,16 +1,6 @@
-#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
-#include "lvgl.h"
-#else
-#include "lvgl/lvgl.h"
-#endif
-
 #include "my_gui.h"
-#include "gui_guider.h"
-#include "custom.h"
 
 lv_ui guider_ui;
-
-
 
 static lv_point_t line_points[] = {{0,0},{0,120}};          /* 直线坐标数组 */
 

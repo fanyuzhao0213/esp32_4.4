@@ -286,9 +286,4 @@ void sync_systime_to_mytime(void)
         // 解析星期几
     int weekday = timeinfo.tm_wday;  // tm_wday 的范围是 0（星期日）到 6（星期六）
     weekday_str = weekdays[weekday];  // 获取星期几的字符串
-
-    // 打印时间信息
-    printf("SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
-           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
-           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
 }

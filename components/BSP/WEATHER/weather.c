@@ -120,6 +120,7 @@ void parse_weather_data(const char *json_data)
         // 解析并保存天气信息
         cJSON *item = NULL;
 
+        // 解析日期
         item = cJSON_GetObjectItem(day, "date");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].date, sizeof(daily_weather[j].date), "%s", item->valuestring);
@@ -127,6 +128,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].date, sizeof(daily_weather[j].date), "N/A");
         }
 
+        // 解析白天天气描述
         item = cJSON_GetObjectItem(day, "text_day");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].text_day, sizeof(daily_weather[j].text_day), "%s", item->valuestring);
@@ -134,6 +136,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].text_day, sizeof(daily_weather[j].text_day), "N/A");
         }
 
+        // 解析夜间天气描述
         item = cJSON_GetObjectItem(day, "text_night");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].text_night, sizeof(daily_weather[j].text_night), "%s", item->valuestring);
@@ -141,6 +144,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].text_night, sizeof(daily_weather[j].text_night), "N/A");
         }
 
+        // 解析白天气温
         item = cJSON_GetObjectItem(day, "high");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].high, sizeof(daily_weather[j].high), "%s", item->valuestring);
@@ -148,6 +152,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].high, sizeof(daily_weather[j].high), "N/A");
         }
 
+        // 解析夜间气温
         item = cJSON_GetObjectItem(day, "low");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].low, sizeof(daily_weather[j].low), "%s", item->valuestring);
@@ -155,6 +160,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].low, sizeof(daily_weather[j].low), "N/A");
         }
 
+        // 解析降水量
         item = cJSON_GetObjectItem(day, "rainfall");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].rainfall, sizeof(daily_weather[j].rainfall), "%s", item->valuestring);
@@ -162,6 +168,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].rainfall, sizeof(daily_weather[j].rainfall), "N/A");
         }
 
+        // 解析湿度
         item = cJSON_GetObjectItem(day, "humidity");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].humidity, sizeof(daily_weather[j].humidity), "%s", item->valuestring);
@@ -169,6 +176,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].humidity, sizeof(daily_weather[j].humidity), "N/A");
         }
 
+        // 解析风速
         item = cJSON_GetObjectItem(day, "wind_speed");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].wind_speed, sizeof(daily_weather[j].wind_speed), "%s", item->valuestring);
@@ -176,6 +184,7 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].wind_speed, sizeof(daily_weather[j].wind_speed), "N/A");
         }
 
+        // 解析风向
         item = cJSON_GetObjectItem(day, "wind_direction");
         if (cJSON_IsString(item)) {
             snprintf(daily_weather[j].wind_direction, sizeof(daily_weather[j].wind_direction), "%s", item->valuestring);
@@ -183,12 +192,57 @@ void parse_weather_data(const char *json_data)
             snprintf(daily_weather[j].wind_direction, sizeof(daily_weather[j].wind_direction), "N/A");
         }
 
-        // 打印解析的天气信息
-        ESP_LOGI(HTTP_TAG, "Date: %s, Text Day: %s, Text Night: %s, High: %s, Low: %s, Rainfall: %s, Humidity: %s, Wind Speed: %s, Wind Direction: %s",
-                 daily_weather[j].date, daily_weather[j].text_day, daily_weather[j].text_night, daily_weather[j].high, daily_weather[j].low,
-                 daily_weather[j].rainfall, daily_weather[j].humidity, daily_weather[j].wind_speed, daily_weather[j].wind_direction);
-    }
+        // 解析降水概率 (precip)
+        item = cJSON_GetObjectItem(day, "precip");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].precip, sizeof(daily_weather[j].precip), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].precip, sizeof(daily_weather[j].precip), "N/A");
+        }
 
+        // 解析风力等级 (wind_scale)
+        item = cJSON_GetObjectItem(day, "wind_scale");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].wind_scale, sizeof(daily_weather[j].wind_scale), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].wind_scale, sizeof(daily_weather[j].wind_scale), "N/A");
+        }
+
+        // 解析白天天气code (code_day)
+        item = cJSON_GetObjectItem(day, "code_day");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].code_day, sizeof(daily_weather[j].code_day), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].code_day, sizeof(daily_weather[j].code_day), "N/A");
+        }
+
+        // 解析夜晚天气code (code_night)
+        item = cJSON_GetObjectItem(day, "code_night");
+        if (cJSON_IsString(item)) {
+            snprintf(daily_weather[j].code_night, sizeof(daily_weather[j].code_night), "%s", item->valuestring);
+        } else {
+            snprintf(daily_weather[j].code_night, sizeof(daily_weather[j].code_night), "N/A");
+        }
+
+        // 打印解析的天气信息
+        ESP_LOGI(HTTP_TAG,
+            "Date: %s, Text Day: %s, Text Night: %s, High: %s, Low: %s, Rainfall: %s, Humidity: %s, "
+            "Wind Speed: %s, Wind Direction: %s, Precip: %s, Wind Scale: %s, Code Day: %s, Code Night: %s",
+            daily_weather[j].date,
+            daily_weather[j].text_day,
+            daily_weather[j].text_night,
+            daily_weather[j].high,
+            daily_weather[j].low,
+            daily_weather[j].rainfall,
+            daily_weather[j].humidity,
+            daily_weather[j].wind_speed,
+            daily_weather[j].wind_direction,
+            daily_weather[j].precip,
+            daily_weather[j].wind_scale,
+            daily_weather[j].code_day,
+            daily_weather[j].code_night
+            );
+        }
     // 释放 JSON 对象
     cJSON_Delete(root);
 }
