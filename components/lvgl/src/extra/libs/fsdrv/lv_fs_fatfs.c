@@ -9,15 +9,11 @@
 #include "../../../lvgl.h"
 
 #if LV_USE_FS_FATFS
-#include "ff.h"
+#include "fatfs/ff.h"  // 使用 ESP-IDF 的标准路径
 
 /*********************
  *      DEFINES
  *********************/
-
-#if LV_FS_FATFS_LETTER == '\0'
-    #error "LV_FS_FATFS_LETTER must be an upper case ASCII letter"
-#endif
 
 /**********************
  *      TYPEDEFS

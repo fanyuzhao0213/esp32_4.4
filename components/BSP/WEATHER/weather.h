@@ -1,6 +1,8 @@
 #ifndef __WEATHER_H_
 #define __WEATHER_H_
 
+extern SemaphoreHandle_t img_update_semaphore;
+extern uint8_t lvgl_systerm_ready_flag;
 // 定义天气信息结构体
 typedef struct {
     char date[16];              // 日期 (例如: "2025-03-21")

@@ -9,11 +9,9 @@
 #include "gui_guider.h"
 #include "events_init.h"
 #include "custom.h"
-#include "BSP/WIFI/wifi_smartconfig.h"
-#include "BSP/WEATHER/weather.h"
 
-void setup_scr_screen_3(lv_ui *ui)
-{
+
+void setup_scr_screen_3(lv_ui *ui){
 
 	//Write codes screen_3
 	ui->screen_3 = lv_obj_create(NULL);
@@ -172,8 +170,8 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_img_houtian
 	ui->screen_3_img_houtian = lv_img_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_img_houtian, 230, 175);
-	lv_obj_set_size(ui->screen_3_img_houtian, 35, 35);
+	lv_obj_set_pos(ui->screen_3_img_houtian, 220, 170);
+	lv_obj_set_size(ui->screen_3_img_houtian, 40, 40);
 	lv_obj_set_scrollbar_mode(ui->screen_3_img_houtian, LV_SCROLLBAR_MODE_OFF);
 
 	//Write style state: LV_STATE_DEFAULT for style_screen_3_img_houtian_main_main_default
@@ -187,7 +185,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_img_opa(&style_screen_3_img_houtian_main_main_default, 255);
 	lv_obj_add_style(ui->screen_3_img_houtian, &style_screen_3_img_houtian_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_add_flag(ui->screen_3_img_houtian, LV_OBJ_FLAG_CLICKABLE);
-	lv_img_set_src(ui->screen_3_img_houtian,&_11_35x35);
+	lv_img_set_src(ui->screen_3_img_houtian,&bmp_tianqi_40x40_37);
 	lv_img_set_pivot(ui->screen_3_img_houtian, 0,0);
 	lv_img_set_angle(ui->screen_3_img_houtian, 0);
 
@@ -223,7 +221,7 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_label_6
 	ui->screen_3_label_6 = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_6, 160, 170);
+	lv_obj_set_pos(ui->screen_3_label_6, 170, 170);
 	lv_obj_set_size(ui->screen_3_label_6, 30, 12);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_6, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_6, "明天");
@@ -433,8 +431,8 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_img_tianqi
 	ui->screen_3_img_tianqi = lv_img_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_img_tianqi, 110, 80);
-	lv_obj_set_size(ui->screen_3_img_tianqi, 40, 40);
+	lv_obj_set_pos(ui->screen_3_img_tianqi, 120, 100);
+	lv_obj_set_size(ui->screen_3_img_tianqi, 40, 39);
 	lv_obj_set_scrollbar_mode(ui->screen_3_img_tianqi, LV_SCROLLBAR_MODE_OFF);
 
 	//Write style state: LV_STATE_DEFAULT for style_screen_3_img_tianqi_main_main_default
@@ -448,16 +446,14 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_img_opa(&style_screen_3_img_tianqi_main_main_default, 255);
 	lv_obj_add_style(ui->screen_3_img_tianqi, &style_screen_3_img_tianqi_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_add_flag(ui->screen_3_img_tianqi, LV_OBJ_FLAG_CLICKABLE);
-	lv_img_set_src(ui->screen_3_img_tianqi,&_0_60x55);
-			// image_jinri_path = get_image_path(daily_weather[0].code_day);
-			// lv_img_set_src(guider_ui.screen_3_img_tianqi, image_jinri_path);
+	lv_img_set_src(ui->screen_3_img_tianqi,&bmp_tianqi_40x40_0);
 	lv_img_set_pivot(ui->screen_3_img_tianqi, 0,0);
 	lv_img_set_angle(ui->screen_3_img_tianqi, 0);
 
 	//Write codes screen_3_label_1
 	ui->screen_3_label_1 = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_1, 60, 120);
-	lv_obj_set_size(ui->screen_3_label_1, 50, 30);
+	lv_obj_set_pos(ui->screen_3_label_1, 70, 130);
+	lv_obj_set_size(ui->screen_3_label_1, 50, 20);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_1, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_1, "晴");
 	lv_label_set_long_mode(ui->screen_3_label_1, LV_LABEL_LONG_WRAP);
@@ -477,7 +473,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_text_font(&style_screen_3_label_1_main_main_default, &lv_customer_font_IBMPlexSansSC_SemiBold_12);
 	lv_style_set_text_letter_space(&style_screen_3_label_1_main_main_default, 2);
 	lv_style_set_text_line_space(&style_screen_3_label_1_main_main_default, 0);
-	lv_style_set_text_align(&style_screen_3_label_1_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_text_align(&style_screen_3_label_1_main_main_default, LV_TEXT_ALIGN_LEFT);
 	lv_style_set_pad_left(&style_screen_3_label_1_main_main_default, 0);
 	lv_style_set_pad_right(&style_screen_3_label_1_main_main_default, 0);
 	lv_style_set_pad_top(&style_screen_3_label_1_main_main_default, 0);
@@ -576,13 +572,13 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_label_wenduriqi
 	ui->screen_3_label_wenduriqi = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_wenduriqi, 20, 120);
-	lv_obj_set_size(ui->screen_3_label_wenduriqi, 40, 10);
+	lv_obj_set_pos(ui->screen_3_label_wenduriqi, 15, 130);
+	lv_obj_set_size(ui->screen_3_label_wenduriqi, 50, 10);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_wenduriqi, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_wenduriqi, "10-30");
 	lv_label_set_long_mode(ui->screen_3_label_wenduriqi, LV_LABEL_LONG_WRAP);
 
-	//Write style state: LV_STATE_DEFAULT for style_screen_3_label_wenduriqi_main_main_default
+	// Write style state: LV_STATE_DEFAULT for style_screen_3_label_wenduriqi_main_main_default
 	static lv_style_t style_screen_3_label_wenduriqi_main_main_default;
 	if (style_screen_3_label_wenduriqi_main_main_default.prop_cnt > 1)
 		lv_style_reset(&style_screen_3_label_wenduriqi_main_main_default);
@@ -594,7 +590,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_bg_grad_dir(&style_screen_3_label_wenduriqi_main_main_default, LV_GRAD_DIR_NONE);
 	lv_style_set_bg_opa(&style_screen_3_label_wenduriqi_main_main_default, 0);
 	lv_style_set_text_color(&style_screen_3_label_wenduriqi_main_main_default, lv_color_make(0xfa, 0xf4, 0xf4));
-	lv_style_set_text_font(&style_screen_3_label_wenduriqi_main_main_default, &lv_font_simsun_12);
+	lv_style_set_text_font(&style_screen_3_label_wenduriqi_main_main_default, &lv_font_arial_12);
 	lv_style_set_text_letter_space(&style_screen_3_label_wenduriqi_main_main_default, 2);
 	lv_style_set_text_line_space(&style_screen_3_label_wenduriqi_main_main_default, 0);
 	lv_style_set_text_align(&style_screen_3_label_wenduriqi_main_main_default, LV_TEXT_ALIGN_CENTER);
@@ -603,6 +599,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_pad_top(&style_screen_3_label_wenduriqi_main_main_default, 0);
 	lv_style_set_pad_bottom(&style_screen_3_label_wenduriqi_main_main_default, 0);
 	lv_obj_add_style(ui->screen_3_label_wenduriqi, &style_screen_3_label_wenduriqi_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 
 	//Write codes screen_3_label_jintianriqi
 	ui->screen_3_label_jintianriqi = lv_label_create(ui->screen_3);
@@ -636,7 +633,7 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_label_mingtianriqi
 	ui->screen_3_label_mingtianriqi = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_mingtianriqi, 160, 190);
+	lv_obj_set_pos(ui->screen_3_label_mingtianriqi, 170, 190);
 	lv_obj_set_size(ui->screen_3_label_mingtianriqi, 45, 12);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_mingtianriqi, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_mingtianriqi, "10-31");
@@ -747,8 +744,8 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_label_riqi
 	ui->screen_3_label_riqi = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_riqi, 15, 42.5);
-	lv_obj_set_size(ui->screen_3_label_riqi, 90, 15);
+	lv_obj_set_pos(ui->screen_3_label_riqi, 10, 40);
+	lv_obj_set_size(ui->screen_3_label_riqi, 125, 20);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_riqi, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_riqi, "2020/10/19");
 	lv_label_set_long_mode(ui->screen_3_label_riqi, LV_LABEL_LONG_WRAP);
@@ -765,10 +762,10 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_bg_grad_dir(&style_screen_3_label_riqi_main_main_default, LV_GRAD_DIR_NONE);
 	lv_style_set_bg_opa(&style_screen_3_label_riqi_main_main_default, 0);
 	lv_style_set_text_color(&style_screen_3_label_riqi_main_main_default, lv_color_make(0xf8, 0xf7, 0xf7));
-	lv_style_set_text_font(&style_screen_3_label_riqi_main_main_default, &lv_font_arial_12);
+	lv_style_set_text_font(&style_screen_3_label_riqi_main_main_default, &lv_font_arial_20);
 	lv_style_set_text_letter_space(&style_screen_3_label_riqi_main_main_default, 2);
 	lv_style_set_text_line_space(&style_screen_3_label_riqi_main_main_default, 0);
-	lv_style_set_text_align(&style_screen_3_label_riqi_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_text_align(&style_screen_3_label_riqi_main_main_default, LV_TEXT_ALIGN_LEFT);
 	lv_style_set_pad_left(&style_screen_3_label_riqi_main_main_default, 0);
 	lv_style_set_pad_right(&style_screen_3_label_riqi_main_main_default, 0);
 	lv_style_set_pad_top(&style_screen_3_label_riqi_main_main_default, 0);
@@ -777,7 +774,7 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_label_xingqi
 	ui->screen_3_label_xingqi = lv_label_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_label_xingqi, 135, 43);
+	lv_obj_set_pos(ui->screen_3_label_xingqi, 145, 43);
 	lv_obj_set_size(ui->screen_3_label_xingqi, 50, 15);
 	lv_obj_set_scrollbar_mode(ui->screen_3_label_xingqi, LV_SCROLLBAR_MODE_OFF);
 	lv_label_set_text(ui->screen_3_label_xingqi, "星期四");
@@ -948,7 +945,7 @@ void setup_scr_screen_3(lv_ui *ui)
 
 	//Write codes screen_3_richu_bai
 	ui->screen_3_richu_bai = lv_img_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_richu_bai, 100, 220);
+	lv_obj_set_pos(ui->screen_3_richu_bai, 100, 213);
 	lv_obj_set_size(ui->screen_3_richu_bai, 120, 20);
 	lv_obj_set_scrollbar_mode(ui->screen_3_richu_bai, LV_SCROLLBAR_MODE_OFF);
 
@@ -999,7 +996,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	//Write codes screen_3_img_jintian
 	ui->screen_3_img_jintian = lv_img_create(ui->screen_3);
 	lv_obj_set_pos(ui->screen_3_img_jintian, 20, 170);
-	lv_obj_set_size(ui->screen_3_img_jintian, 35, 35);
+	lv_obj_set_size(ui->screen_3_img_jintian, 40, 40);
 	lv_obj_set_scrollbar_mode(ui->screen_3_img_jintian, LV_SCROLLBAR_MODE_OFF);
 
 	//Write style state: LV_STATE_DEFAULT for style_screen_3_img_jintian_main_main_default
@@ -1013,14 +1010,14 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_img_opa(&style_screen_3_img_jintian_main_main_default, 255);
 	lv_obj_add_style(ui->screen_3_img_jintian, &style_screen_3_img_jintian_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_add_flag(ui->screen_3_img_jintian, LV_OBJ_FLAG_CLICKABLE);
-	lv_img_set_src(ui->screen_3_img_jintian,&_5_35x35);
+	lv_img_set_src(ui->screen_3_img_jintian,&bmp_tianqi_40x40_1);
 	lv_img_set_pivot(ui->screen_3_img_jintian, 0,0);
 	lv_img_set_angle(ui->screen_3_img_jintian, 0);
 
 	//Write codes screen_3_img_mingtian
 	ui->screen_3_img_mingtian = lv_img_create(ui->screen_3);
-	lv_obj_set_pos(ui->screen_3_img_mingtian, 130, 170);
-	lv_obj_set_size(ui->screen_3_img_mingtian, 35, 35);
+	lv_obj_set_pos(ui->screen_3_img_mingtian, 125, 170);
+	lv_obj_set_size(ui->screen_3_img_mingtian, 40, 40);
 	lv_obj_set_scrollbar_mode(ui->screen_3_img_mingtian, LV_SCROLLBAR_MODE_OFF);
 
 	//Write style state: LV_STATE_DEFAULT for style_screen_3_img_mingtian_main_main_default
@@ -1034,7 +1031,7 @@ void setup_scr_screen_3(lv_ui *ui)
 	lv_style_set_img_opa(&style_screen_3_img_mingtian_main_main_default, 255);
 	lv_obj_add_style(ui->screen_3_img_mingtian, &style_screen_3_img_mingtian_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_add_flag(ui->screen_3_img_mingtian, LV_OBJ_FLAG_CLICKABLE);
-	lv_img_set_src(ui->screen_3_img_mingtian,&_1_35x35);
+	lv_img_set_src(ui->screen_3_img_mingtian,&bmp_tianqi_40x40_0);
 	lv_img_set_pivot(ui->screen_3_img_mingtian, 0,0);
 	lv_img_set_angle(ui->screen_3_img_mingtian, 0);
 

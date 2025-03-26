@@ -13,13 +13,17 @@
 #include "BSP/WIFI/wifi_smartconfig.h"
 #include <sys/stat.h> // 用于 stat 函数
 #include <stdbool.h>  // 用于 bool 类型
+#include "esp_task_wdt.h"
 
-/**
- * @brief 检查指定路径的文件是否存在
- * @param path 文件路径
- * @return true 文件存在
- * @return false 文件不存在
- */
+static char cached_paths[3][128]; // 缓存图片路径
+static uint8_t img_index = 0;     // 当前加载的图片索引
+// 获取图像路径
+const char* get_image_path(char* weather_code)
+{
+	static char path[256]; // 静态分配，避免被释放
+	snprintf(path, sizeof(path), "bmp_tianqi_40x40_%s", weather_code);
+    return path;
+}
 
 // 创建一个表盘对象
 lv_obj_t *meter;
@@ -43,80 +47,38 @@ static lv_meter_indicator_t *indic_sec = NULL;
 int screen_2_analog_clock_hour_value = 0;
 int screen_2_analog_clock_min_value = 0;
 int screen_2_analog_clock_sec_value = 0;
-
-void check_file_access(const char *path) {
-    lv_fs_file_t file;
-    lv_fs_res_t res;
-
-    // 打开文件
-    res = lv_fs_open(&file, path, LV_FS_MODE_RD);
-    if (res != LV_FS_RES_OK) {
-        printf("Failed to open file: %s (error code: %d)\n", path, res);
-        return;
+lv_img_dsc_t* get_image_descriptor(char* weather_code) {
+    // 将 weather_code 转换为对应的数值（如果是数字字符串）
+    int num = atoi(weather_code);  // 转换字符串为整数
+	// printf("weather_code:%s\n",weather_code);
+	// printf("num:%d\n",num);
+    // 判断数字是否在合法范围内（0-38 或 99）
+    if ((num >= 0 && num <= 38) || num == 99) {
+        // 使用数组来存储图像描述符
+        static lv_img_dsc_t* image_desc[] = {
+            &bmp_tianqi_40x40_0, &bmp_tianqi_40x40_1, &bmp_tianqi_40x40_2,
+            &bmp_tianqi_40x40_3, &bmp_tianqi_40x40_4, &bmp_tianqi_40x40_5,
+			&bmp_tianqi_40x40_6, &bmp_tianqi_40x40_7, &bmp_tianqi_40x40_8,
+			&bmp_tianqi_40x40_9, &bmp_tianqi_40x40_10, &bmp_tianqi_40x40_11,
+			&bmp_tianqi_40x40_12, &bmp_tianqi_40x40_13, &bmp_tianqi_40x40_14,
+			&bmp_tianqi_40x40_15, &bmp_tianqi_40x40_16, &bmp_tianqi_40x40_17,
+			&bmp_tianqi_40x40_18, &bmp_tianqi_40x40_19, &bmp_tianqi_40x40_20,
+			&bmp_tianqi_40x40_21, &bmp_tianqi_40x40_22, &bmp_tianqi_40x40_23,
+			&bmp_tianqi_40x40_24, &bmp_tianqi_40x40_25, &bmp_tianqi_40x40_26,
+			&bmp_tianqi_40x40_27, &bmp_tianqi_40x40_28, &bmp_tianqi_40x40_29,
+			&bmp_tianqi_40x40_30, &bmp_tianqi_40x40_31, &bmp_tianqi_40x40_32,
+			&bmp_tianqi_40x40_33, &bmp_tianqi_40x40_34, &bmp_tianqi_40x40_35,
+			&bmp_tianqi_40x40_36, &bmp_tianqi_40x40_37, &bmp_tianqi_40x40_38,
+            &bmp_tianqi_40x40_99
+        };
+        // 判断 weather_code 是否在有效范围内并返回相应的图像描述符
+        if (num <= 38 || num == 99) {
+            return image_desc[num];  // 根据 weather_code 的值返回图像描述符
+        }
     }
-
-uint32_t file_size = 0;
-
-// 将文件指针移动到文件末尾
-res = lv_fs_seek(&file, 0, LV_FS_SEEK_END);
-if (res != LV_FS_RES_OK) {
-    printf("Failed to seek to end of file\n");
-    lv_fs_close(&file);
-    return;
+    return NULL;  // 如果 weather_code 不在有效范围内，返回 NULL
 }
 
-// 获取文件指针位置（即文件大小）
-res = lv_fs_tell(&file, &file_size);
-if (res != LV_FS_RES_OK) {
-    printf("Failed to get file size\n");
-    lv_fs_close(&file);
-    return;
-}
-
-// 将文件指针移动回文件开头
-res = lv_fs_seek(&file, 0, LV_FS_SEEK_SET);
-if (res != LV_FS_RES_OK) {
-    printf("Failed to seek to start of file\n");
-    lv_fs_close(&file);
-    return;
-}
-
-printf("File size: %u bytes\n", file_size);
-
-    // 读取文件内容
-    uint8_t *buffer = (uint8_t *)lv_mem_alloc(file_size);
-    if (buffer == NULL) {
-        printf("Failed to allocate memory for file buffer\n");
-        lv_fs_close(&file);
-        return;
-    }
-
-    uint32_t bytes_read;
-    res = lv_fs_read(&file, buffer, file_size, &bytes_read);
-    if (res != LV_FS_RES_OK || bytes_read != file_size) {
-        printf("Failed to read file: %s (error code: %d, bytes read: %u)\n", path, res, bytes_read);
-    } else {
-        printf("Successfully read file: %s (%u bytes)\n", path, bytes_read);
-    }
-
-    // 释放缓冲区
-    lv_mem_free(buffer);
-
-    // 关闭文件
-    lv_fs_close(&file);
-}
-
-
-// 获取图像路径
-const char* get_image_path(char* weather_code)
-{
-	static char path[256]; // 静态分配，避免被释放
-    // 根据 weather_code 生成文件名
-    // snprintf(path, sizeof(path), "/sdcard/3d_40/BMP_%s.c", weather_code);
-	snprintf(path, sizeof(path), "S:/MY_IMAGE/WHITE/%s@1x.png", weather_code);
-	// snprintf(path, sizeof(path), "/sdcard/MY_IMAGE/WHITE/%s@1x.png", weather_code);
-    return path;
-}
 
 // 定时器回调函数，用于更新时间
 void screen_2_analog_clock_timer(lv_timer_t *timer)
@@ -152,100 +114,74 @@ void screen_2_analog_clock_timer(lv_timer_t *timer)
 	}
 	else if(current_screen == SCREEN_3)
 	{
-		// sync_systime_to_mytime();
-		// /*明天和后天的日期显示*/
-		// char temp_buf[50] = {0};
-        // strncpy(temp_buf, daily_weather[1].date + 5, 5);
-        // temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
-		// lv_label_set_text(guider_ui.screen_3_label_mingtianriqi,temp_buf);
-		// memset(temp_buf,0,20);
-        // strncpy(temp_buf, daily_weather[2].date + 5, 5);
-        // temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
-		// lv_label_set_text(guider_ui.screen_3_label_houtianriqi,temp_buf);
+		sync_systime_to_mytime();
+		/*明天和后天的日期显示*/
+		char temp_buf[50] = {0};
+        strncpy(temp_buf, daily_weather[1].date + 5, 5);
+        temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
+		lv_label_set_text(guider_ui.screen_3_label_mingtianriqi,temp_buf);
+		memset(temp_buf,0,20);
+        strncpy(temp_buf, daily_weather[2].date + 5, 5);
+        temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
+		lv_label_set_text(guider_ui.screen_3_label_houtianriqi,temp_buf);
 
-		// /*今天日期和时间显示*/
-		// sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
-		// lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
-		// lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
-		// lv_label_set_text(guider_ui.screen_3_label_jintianriqi,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
-		// lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
-		// lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
-		// lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
+		/*今天日期和时间显示*/
+		sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
+		lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
+		lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
+		lv_label_set_text(guider_ui.screen_3_label_jintianriqi,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
+		lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
+		lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
+		lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
 
-		// /*天气相关显示*/
-		// /* 天气*/
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%s",daily_weather[0].text_day);
-		// lv_label_set_text(guider_ui.screen_3_label_1,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%s°",daily_weather[0].high);
-		// lv_label_set_text(guider_ui.screen_3_label_gaowen,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%s°",daily_weather[0].low);
-		// lv_label_set_text(guider_ui.screen_3_label_diwen,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%s%%",daily_weather[0].humidity);
-		// lv_label_set_text(guider_ui.screen_3_label_jiangshui,temp_buf);
-		// memset(temp_buf,0,20);
-		// sprintf(temp_buf,"%s",daily_weather[0].wind_speed);
-		// lv_label_set_text(guider_ui.screen_3_label_fengsu,temp_buf);
-		// /*风向*/
-		// // 使用 strstr 查找子字符串
-		// if (strstr(daily_weather[0].wind_direction, "无"))
-		// {
-		// 	memset(temp_buf,0,20);
-		// 	sprintf(temp_buf,"%s","无风");
-		// 	lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
-		// }
-		// else
-		// {
-		// 	memset(temp_buf,0,20);
-		// 	sprintf(temp_buf,"%s",daily_weather[0].wind_direction);
-		// 	lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
-		// }
-
-		if(!image_set)
+		/*天气相关显示*/
+		/* 天气*/
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s",daily_weather[0].text_day);
+		lv_label_set_text(guider_ui.screen_3_label_1,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s°",daily_weather[0].high);
+		lv_label_set_text(guider_ui.screen_3_label_gaowen,temp_buf);
+		// lv_label_set_text(guider_ui.screen_3_label_wendu,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s",daily_weather[0].high);
+		lv_label_set_text(guider_ui.screen_3_label_wendu,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s°",daily_weather[0].low);
+		lv_label_set_text(guider_ui.screen_3_label_diwen,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s%%",daily_weather[0].humidity);
+		lv_label_set_text(guider_ui.screen_3_label_jiangshui,temp_buf);
+		memset(temp_buf,0,20);
+		sprintf(temp_buf,"%s",daily_weather[0].wind_speed);
+		lv_label_set_text(guider_ui.screen_3_label_fengsu,temp_buf);
+		/*风向*/
+		// 使用 strstr 查找子字符串
+		if (strstr(daily_weather[0].wind_direction, "无"))
 		{
-			const char *image_jinri_path = get_image_path(daily_weather[0].code_day);
-			const char *image_mingri_path = get_image_path(daily_weather[1].code_day);
-			const char *image_houri_path = get_image_path(daily_weather[2].code_day);
-
-			// 打印图像路径
-			printf("Setting today's image: %s\n", image_jinri_path);
-			printf("Setting tomorrow's image: %s\n", image_mingri_path);
-			printf("Setting day after tomorrow's image: %s\n", image_houri_path);
-
-			// FILE *file = fopen(image_jinri_path, "rb");
-			// if (file) {
-			// 	printf("File exists: image_jinri_path:%s\n",image_jinri_path);
-			// 	fclose(file);
-			// } else {
-			// 	printf("File does not exist: image_jinri_path:%s\n",image_jinri_path);
-			// }
-
-			// 设置图像源
-			lv_img_set_src(guider_ui.screen_3_img_tianqi, image_jinri_path);
-			lv_img_set_src(guider_ui.screen_3_img_jintian, image_jinri_path);
-			lv_img_set_src(guider_ui.screen_3_img_mingtian, image_mingri_path);
-			lv_img_set_src(guider_ui.screen_3_img_houtian, image_houri_path);
-
-			// 强制刷新图像缓存
-			lv_img_cache_invalidate_src(image_jinri_path);
-			lv_img_cache_invalidate_src(image_mingri_path);
-			lv_img_cache_invalidate_src(image_houri_path);
-
-			// 手动刷新 LVGL 对象
-			lv_obj_invalidate(guider_ui.screen_3_img_tianqi);
-			lv_obj_invalidate(guider_ui.screen_3_img_jintian);
-			lv_obj_invalidate(guider_ui.screen_3_img_mingtian);
-			lv_obj_invalidate(guider_ui.screen_3_img_houtian);
-
-			image_set = true;  // 标记图像已设置
+			memset(temp_buf,0,20);
+			sprintf(temp_buf,"%s","无风");
+			lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
 		}
+		else
+		{
+			memset(temp_buf,0,20);
+			sprintf(temp_buf,"%s",daily_weather[0].wind_direction);
+			lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
+		}
+		//test
+		// memcpy(daily_weather[0].code_day,"1",2);
+		// memcpy(daily_weather[1].code_day,"7",2);
+		// memcpy(daily_weather[2].code_day,"11",3);
+		// 缓存上次的路径
+		lv_img_set_src(guider_ui.screen_3_img_tianqi, get_image_descriptor(daily_weather[0].code_day));
+		lv_img_set_src(guider_ui.screen_3_img_jintian, get_image_descriptor(daily_weather[0].code_day));
+		lv_img_set_src(guider_ui.screen_3_img_mingtian, get_image_descriptor(daily_weather[1].code_day));
+		lv_img_set_src(guider_ui.screen_3_img_houtian, get_image_descriptor(daily_weather[2].code_day));
 	}
 }
 

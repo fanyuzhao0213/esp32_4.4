@@ -303,6 +303,10 @@ void http_client_task(void *pvParameters)
                         esp_http_client_get_content_length(client));
                         printf("data:%s", output_buffer);
                         parse_weather_data(output_buffer);
+                        while(!lvgl_systerm_ready_flag)
+                        {
+                            vTaskDelay(1000);       //1S
+                        }
                     } else {
                         ESP_LOGE(HTTP_TAG, "Failed to read response");
                     }

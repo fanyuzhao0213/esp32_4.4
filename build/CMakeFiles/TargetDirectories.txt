@@ -707,6 +707,13 @@ G:/test_project/esp32_4.4/build/esp-idf/lvgl/CMakeFiles/list_install_components.
 G:/test_project/esp32_4.4/build/esp-idf/lvgl/CMakeFiles/install.dir
 G:/test_project/esp32_4.4/build/esp-idf/lvgl/CMakeFiles/install/local.dir
 G:/test_project/esp32_4.4/build/esp-idf/lvgl/CMakeFiles/install/strip.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/__idf_lv_fs_if.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/edit_cache.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/rebuild_cache.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/list_install_components.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/install.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/install/local.dir
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/CMakeFiles/install/strip.dir
 G:/test_project/esp32_4.4/build/esp-idf/lvgl_esp32_drivers/CMakeFiles/__idf_lvgl_esp32_drivers.dir
 G:/test_project/esp32_4.4/build/esp-idf/lvgl_esp32_drivers/CMakeFiles/edit_cache.dir
 G:/test_project/esp32_4.4/build/esp-idf/lvgl_esp32_drivers/CMakeFiles/rebuild_cache.dir

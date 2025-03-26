@@ -23,9 +23,13 @@
 #include "esp_spiffs.h"
 #include "esp_vfs.h"
 #include "nvs_flash.h"
-
 #include "my_gui.h"
+#include "lv_fs_if/lv_fs_if.h"
 
+
+// 创建信号量
+SemaphoreHandle_t img_update_semaphore;
+uint8_t lvgl_systerm_ready_flag = 0;
 
 #define DEFAULT_FD_NUM          5
 #define DEFAULT_MOUNT_POINT     "/spiffs"
@@ -35,7 +39,7 @@ static const char               *TAG = "spiffs";
  *      DEFINES
  *********************/
 #define LVGL_TASK_STACK_SIZE   (4 * 1024)   // 定义LVGL任务的堆栈大小（字节）
-#define LVGL_TASK_PRIORITY     6            // 定义LVGL任务的优先级
+#define LVGL_TASK_PRIORITY     3            // 定义LVGL任务的优先级
 #define LV_TICK_PERIOD_MS      1           // 心跳周期为1ms
 
 EventGroupHandle_t g_event_group;        /* 定义事件组 */
@@ -230,6 +234,9 @@ static void lv_tick_task(void *arg)
 // 打印板子信息和重启原因
 static void print_chip_info(void)
 {
+    printf("-------------esp32-s3----------------\r\n");
+	printf("编译时间:%s %s\r\n", __DATE__, __TIME__);
+	printf("esp32 sdk version :%s\r\n", esp_get_idf_version());
     esp_chip_info_t chip_info;
     esp_err_t ret;
     uint32_t flash_size;
@@ -284,7 +291,7 @@ void wifi_init(void)
         //start http  task
         obtain_time();
         mqtt_start();
-		xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
+		xTaskCreate(http_client_task, "http_client", 5120, NULL, 6, NULL);
     }
 }
 
@@ -292,8 +299,10 @@ void wifi_init(void)
 static void lvgl_task(void *arg)
 {
     printf("LVGL任务启动,核心: %d\n", xPortGetCoreID());
-
+    /* 初始化SD卡 */
+    SD_Init();
     lv_init();                             // 初始化LVGL
+    lv_fs_if_init();
     lv_port_disp_init();                   // 初始化显示器
     lv_port_indev_init();                  // 初始化触摸屏
 
@@ -311,11 +320,11 @@ static void lvgl_task(void *arg)
     printf("scr_act_width() %d\n",scr_act_width());
     printf("LVGL与定时器初始化完成\n");
 
-    // // 加载LVGL widgets示例
+    // // 加载LVGL widgets示例-
     // lv_demo_widgets();
     lv_mainstart();
     printf("LVGL Widgets demo加载完成\n");
-
+    lvgl_systerm_ready_flag = 1;
     // LVGL任务循环
     while (1)
     {
@@ -341,7 +350,6 @@ i2c_obj_t i2c1_master;
 void app_main(void)
 {
     print_chip_info();                  // 打印芯片信息和重启原因
-    SD_Init();
     my_spiffs_init();
     ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
     ESP_LOGI(MAINTAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息

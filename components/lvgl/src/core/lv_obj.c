@@ -25,6 +25,7 @@
 #include "../extra/lv_extra.h"
 #include <stdint.h>
 #include <string.h>
+#include "stdio.h"
 
 #if LV_USE_GPU_STM32_DMA2D
     #include "../draw/stm32_dma2d/lv_gpu_stm32_dma2d.h"
@@ -94,9 +95,15 @@ bool lv_is_initialized(void)
 {
     return lv_initialized;
 }
+void my_log_cb(const char * buf) {
+    printf("%s", buf);
+}
 
 void lv_init(void)
 {
+    #if LV_USE_LOG
+    lv_log_register_print_cb(my_log_cb);
+    #endif
     /*Do nothing if already initialized*/
     if(lv_initialized) {
         LV_LOG_WARN("lv_init: already inited");

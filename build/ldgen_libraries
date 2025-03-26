@@ -74,5 +74,6 @@ G:/test_project/esp32_4.4/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
 G:/test_project/esp32_4.4/build/esp-idf/main/libmain.a
 G:/test_project/esp32_4.4/build/esp-idf/BSP/libBSP.a
 G:/test_project/esp32_4.4/build/esp-idf/lvgl/liblvgl.a
+G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/liblv_fs_if.a
 G:/test_project/esp32_4.4/build/esp-idf/lvgl_esp32_drivers/liblvgl_esp32_drivers.a
 G:/test_project/esp32_4.4/build/esp-idf/lv_porting/liblv_porting.a

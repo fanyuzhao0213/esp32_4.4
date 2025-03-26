@@ -124,6 +124,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("G:/test_project/esp32_4.4/build/esp-idf/main/cmake_install.cmake")
   include("G:/test_project/esp32_4.4/build/esp-idf/BSP/cmake_install.cmake")
   include("G:/test_project/esp32_4.4/build/esp-idf/lvgl/cmake_install.cmake")
+  include("G:/test_project/esp32_4.4/build/esp-idf/lv_fs_if/cmake_install.cmake")
   include("G:/test_project/esp32_4.4/build/esp-idf/lvgl_esp32_drivers/cmake_install.cmake")
   include("G:/test_project/esp32_4.4/build/esp-idf/lv_porting/cmake_install.cmake")
 

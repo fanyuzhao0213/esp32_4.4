@@ -16,6 +16,18 @@
         "weather.h": "c",
         "custom.h": "c",
         "gui_guider.h": "c",
-        "events_init.h": "c"
+        "events_init.h": "c",
+        "lv_port_fatfs.h": "c",
+        "stat.h": "c",
+        "stdarg.h": "c",
+        "lv_log.h": "c",
+        "lv_port_fs_.h": "c",
+        "lv_fs.h": "c",
+        "lv_gc.h": "c",
+        "lv_extra.h": "c",
+        "lv_assert.h": "c",
+        "ff.h": "c",
+        "system_error": "c",
+        "lv_fs_if.h": "c"
     }
 }
