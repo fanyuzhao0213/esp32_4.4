@@ -144,6 +144,36 @@ void setup_scr_screen_2(lv_ui *ui)
 
     // 创建模拟时钟
 	create_analog_clock(ui->screen_2);
+
+    	//Write codes screen_2_btn_Home
+	ui->screen_2_btn_Home = lv_btn_create(ui->screen_2);
+	lv_obj_set_pos(ui->screen_2_btn_Home, 270, 190);
+	lv_obj_set_size(ui->screen_2_btn_Home, 50, 50);
+	lv_obj_set_scrollbar_mode(ui->screen_2_btn_Home, LV_SCROLLBAR_MODE_OFF);
+
+	//Write style state: LV_STATE_DEFAULT for style_screen_2_btn_home_main_main_default
+	static lv_style_t style_screen_2_btn_home_main_main_default;
+	if (style_screen_2_btn_home_main_main_default.prop_cnt > 1)
+		lv_style_reset(&style_screen_2_btn_home_main_main_default);
+	else
+		lv_style_init(&style_screen_2_btn_home_main_main_default);
+	lv_style_set_radius(&style_screen_2_btn_home_main_main_default, 5);
+	lv_style_set_bg_color(&style_screen_2_btn_home_main_main_default, lv_color_make(0x93, 0xb8, 0xd7));
+	lv_style_set_bg_grad_color(&style_screen_2_btn_home_main_main_default, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_dir(&style_screen_2_btn_home_main_main_default, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_opa(&style_screen_2_btn_home_main_main_default, 255);
+	lv_style_set_border_color(&style_screen_2_btn_home_main_main_default, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_border_width(&style_screen_2_btn_home_main_main_default, 0);
+	lv_style_set_border_opa(&style_screen_2_btn_home_main_main_default, 255);
+	lv_style_set_text_color(&style_screen_2_btn_home_main_main_default, lv_color_make(0xdb, 0x14, 0x1b));
+	lv_style_set_text_font(&style_screen_2_btn_home_main_main_default, &lv_font_Acme_Regular_20);
+	lv_style_set_text_align(&style_screen_2_btn_home_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_obj_add_style(ui->screen_2_btn_Home, &style_screen_2_btn_home_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+	ui->screen_2_btn_Home_label = lv_label_create(ui->screen_2_btn_Home);
+	lv_label_set_text(ui->screen_2_btn_Home_label, "Home");
+	lv_obj_set_style_pad_all(ui->screen_2_btn_Home, 0, LV_STATE_DEFAULT);
+	lv_obj_align(ui->screen_2_btn_Home_label, LV_ALIGN_CENTER, 0, 0);
+
 	/**
 	 * meter : 指向仪表对象的指针
 	 * scale : 指向刻度对象

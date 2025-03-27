@@ -276,6 +276,8 @@ void wifi_init(void)
     systerminit_semaphore = xSemaphoreCreateBinary();
     if (systerminit_semaphore == NULL) {
         ESP_LOGE(TAG, "信号量创建失败");
+    }else{
+        ESP_LOGE(TAG, "信号量创建成功");
     }
     //创建事件标志组
     g_event_group = xEventGroupCreate();
@@ -298,7 +300,6 @@ void wifi_init(void)
         mqtt_start();
         // 创建LVGL任务
         xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
-		xTaskCreate(http_client_task, "http_client", 5120, NULL, 6, NULL);
     }
 }
 

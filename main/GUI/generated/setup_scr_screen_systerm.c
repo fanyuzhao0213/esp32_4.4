@@ -70,7 +70,7 @@ lv_img_dsc_t* get_image_descriptor(char* weather_code) {
 // 定时器回调函数，用于更新时间
 void screen_systerm_timer(lv_timer_t *timer)
 {
-	printf("current_screen: %d\r\n",current_screen);
+	// printf("current_screen: %d\r\n",current_screen);
 	if(current_screen == SCREEN_2)
 	{
 		uint8_t m_hours = 0;
@@ -807,6 +807,83 @@ void setup_scr_screen_systerm(lv_ui *ui){
 	lv_style_set_pad_top(&style_screen_systerm_label_8_main_main_default, 0);
 	lv_style_set_pad_bottom(&style_screen_systerm_label_8_main_main_default, 0);
 	lv_obj_add_style(ui->screen_systerm_label_8, &style_screen_systerm_label_8_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes screen_systerm_imgbtn_2051
+	ui->screen_systerm_imgbtn_2051 = lv_imgbtn_create(ui->screen_systerm);
+	lv_obj_set_pos(ui->screen_systerm_imgbtn_2051, 220, 165);
+	lv_obj_set_size(ui->screen_systerm_imgbtn_2051, 80, 50);
+	lv_obj_set_scrollbar_mode(ui->screen_systerm_imgbtn_2051, LV_SCROLLBAR_MODE_OFF);
+
+	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_imgbtn_2051_main_main_default
+	static lv_style_t style_screen_systerm_imgbtn_2051_main_main_default;
+	if (style_screen_systerm_imgbtn_2051_main_main_default.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_2051_main_main_default);
+	else
+		lv_style_init(&style_screen_systerm_imgbtn_2051_main_main_default);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_2051_main_main_default, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_2051_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2051_main_main_default, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2051_main_main_default, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2051_main_main_default, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_2051, &style_screen_systerm_imgbtn_2051_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write style state: LV_STATE_PRESSED for style_screen_systerm_imgbtn_2051_main_main_pressed
+	static lv_style_t style_screen_systerm_imgbtn_2051_main_main_pressed;
+	if (style_screen_systerm_imgbtn_2051_main_main_pressed.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_2051_main_main_pressed);
+	else
+		lv_style_init(&style_screen_systerm_imgbtn_2051_main_main_pressed);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_2051_main_main_pressed, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_2051_main_main_pressed, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2051_main_main_pressed, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2051_main_main_pressed, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2051_main_main_pressed, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_2051, &style_screen_systerm_imgbtn_2051_main_main_pressed, LV_PART_MAIN|LV_STATE_PRESSED);
+
+	//Write style state: LV_STATE_CHECKED for style_screen_systerm_imgbtn_2051_main_main_checked
+	static lv_style_t style_screen_systerm_imgbtn_2051_main_main_checked;
+	if (style_screen_systerm_imgbtn_2051_main_main_checked.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_2051_main_main_checked);
+	else
+		lv_style_init(&style_screen_systerm_imgbtn_2051_main_main_checked);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_2051_main_main_checked, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_2051_main_main_checked, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2051_main_main_checked, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2051_main_main_checked, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2051_main_main_checked, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_2051, &style_screen_systerm_imgbtn_2051_main_main_checked, LV_PART_MAIN|LV_STATE_CHECKED);
+	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_2051, LV_IMGBTN_STATE_RELEASED, NULL, &_clock_alpha_80x50, NULL);
+	lv_obj_add_flag(ui->screen_systerm_imgbtn_2051, LV_OBJ_FLAG_CHECKABLE);
+
+		//Write codes screen_systerm_label_9
+	ui->screen_systerm_label_9 = lv_label_create(ui->screen_systerm);
+	lv_obj_set_pos(ui->screen_systerm_label_9, 210, 220);
+	lv_obj_set_size(ui->screen_systerm_label_9, 100, 20);
+	lv_obj_set_scrollbar_mode(ui->screen_systerm_label_9, LV_SCROLLBAR_MODE_OFF);
+	lv_label_set_text(ui->screen_systerm_label_9, "CLOCK");
+	lv_label_set_long_mode(ui->screen_systerm_label_9, LV_LABEL_LONG_WRAP);
+
+	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_label_9_main_main_default
+	static lv_style_t style_screen_systerm_label_9_main_main_default;
+	if (style_screen_systerm_label_9_main_main_default.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_label_9_main_main_default);
+	else
+		lv_style_init(&style_screen_systerm_label_9_main_main_default);
+	lv_style_set_radius(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_bg_color(&style_screen_systerm_label_9_main_main_default, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_color(&style_screen_systerm_label_9_main_main_default, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_dir(&style_screen_systerm_label_9_main_main_default, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_opa(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_text_color(&style_screen_systerm_label_9_main_main_default, lv_color_make(0x2d, 0xb9, 0xa8));
+	lv_style_set_text_font(&style_screen_systerm_label_9_main_main_default, &lv_font_Acme_Regular_20);
+	lv_style_set_text_letter_space(&style_screen_systerm_label_9_main_main_default, 2);
+	lv_style_set_text_line_space(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_text_align(&style_screen_systerm_label_9_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_pad_left(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_pad_right(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_pad_top(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_style_set_pad_bottom(&style_screen_systerm_label_9_main_main_default, 0);
+	lv_obj_add_style(ui->screen_systerm_label_9, &style_screen_systerm_label_9_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     // 创建定时器
     static bool screen_systerm_timer_enabled = false;

@@ -1,6 +1,10 @@
 #include "events_init.h"
 #include <stdio.h>
 #include "lvgl.h"
+#include "BSP/WEATHER/weather.h"
+
+//保存协议栈
+TaskHandle_t xHttpTask = NULL;
 
 // 全局变量
 screen_state_t current_screen = SCREEN_HOME;  // 当前屏幕状态
@@ -40,6 +44,7 @@ void switch_screen(screen_state_t new_screen)
             lv_scr_load_anim(guider_ui.screen_2, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
             break;
         case SCREEN_3:
+            xTaskCreate(http_client_task, "http_client", 5120, NULL, 6, &xHttpTask);
             if (guider_ui.screen_3_del == true)
                 setup_scr_screen_3(&guider_ui);
             lv_scr_load_anim(guider_ui.screen_3, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
@@ -71,9 +76,33 @@ static void screen_systerm_imgbtn_weather_event_handler(lv_event_t *e)
 	}
 }
 
+static void screen_systerm_imgbtn_2051_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            switch_screen(SCREEN_2);  // 切换到屏幕 2
+			// if (guider_ui.screen_2_del == true)
+			// 	setup_scr_screen_2(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_2, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_systerm_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
 void events_init_screen_systerm(lv_ui *ui)
 {
 	lv_obj_add_event_cb(ui->screen_systerm_imgbtn_weather, screen_systerm_imgbtn_weather_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui->screen_systerm_imgbtn_2051, screen_systerm_imgbtn_2051_event_handler, LV_EVENT_ALL, NULL);
 }
 
 // 屏幕 1 的事件处理函数
@@ -163,20 +192,79 @@ static void screen_2_next_event_handler(lv_event_t *e) {
     }
 }
 
+static void screen_2_btn_Home_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            switch_screen(SCREEN_SYSTERM);  // 切换到屏幕 3
+			// if (guider_ui.screen_systerm_del == true)
+			// 	setup_scr_screen_systerm(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_systerm, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_2_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+
 void events_init_screen_2(lv_ui *ui) {
     lv_obj_add_event_cb(ui->screen_2_back, screen_2_back_event_handler, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui->screen_2_next, screen_2_next_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui->screen_2_btn_Home, screen_2_btn_Home_event_handler, LV_EVENT_ALL, NULL);
+}
+
+static void screen_3_btn_Home_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            // 需要销毁时
+            if (xHttpTask != NULL) {
+                vTaskDelete(xHttpTask);
+                xHttpTask = NULL; // 避免野指针
+            }
+            switch_screen(SCREEN_SYSTERM);
+			// if (guider_ui.screen_systerm_del == true)
+			// 	setup_scr_screen_systerm(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_systerm, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_3_del = true;
+	}
+		break;
+	default:
+		break;
+	}
 }
 
 // 屏幕 3 的事件处理函数
 static void screen_3_backbtn_event_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
+        // 需要销毁时
+        if (xHttpTask != NULL) {
+            vTaskDelete(xHttpTask);
+            xHttpTask = NULL; // 避免野指针
+        }
         switch_screen(SCREEN_2);  // 切换到屏幕 2
     }
 }
 
 void events_init_screen_3(lv_ui *ui) {
     lv_obj_add_event_cb(ui->screen_3_backbtn, screen_3_backbtn_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui->screen_3_btn_Home, screen_3_btn_Home_event_handler, LV_EVENT_ALL, NULL);
 }
 

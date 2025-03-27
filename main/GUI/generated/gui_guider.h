@@ -41,11 +41,14 @@ typedef struct
 	lv_obj_t *screen_systerm_label_1;
 	lv_obj_t *screen_systerm_imgbtn_2050;
 	lv_obj_t *screen_systerm_imgbtn_2050_label;
+	lv_obj_t *screen_systerm_imgbtn_2051;
+	lv_obj_t *screen_systerm_imgbtn_2051_label;
 	lv_obj_t *screen_systerm_label_2;
 	lv_obj_t *screen_systerm_label_3;
 	lv_obj_t *screen_systerm_label_5;
 	lv_obj_t *screen_systerm_label_6;
 	lv_obj_t *screen_systerm_label_8;
+	lv_obj_t *screen_systerm_label_9;
 	lv_obj_t *screen_home;
 	bool screen_home_del;
 	lv_obj_t *screen_home_jiasu;
@@ -68,6 +71,8 @@ typedef struct
 	lv_obj_t *screen_2_next;
 	lv_obj_t *screen_2_next_label;
 	lv_obj_t *screen_2_analog_clock;
+	lv_obj_t *screen_2_btn_Home;
+	lv_obj_t *screen_2_btn_Home_label;
 	lv_obj_t *screen_3;
 	bool screen_3_del;
 	lv_obj_t *screen_3_baitian;
@@ -107,6 +112,8 @@ typedef struct
 	lv_obj_t *screen_3_backbtn_label;
 	lv_obj_t *screen_3_img_jintian;
 	lv_obj_t *screen_3_img_mingtian;
+	lv_obj_t *screen_3_btn_Home;
+	lv_obj_t *screen_3_btn_Home_label;
 }lv_ui;
 
 void init_scr_del_flag(lv_ui *ui);
@@ -127,6 +134,7 @@ LV_IMG_DECLARE(_app_movie_alpha_80x50);
 LV_IMG_DECLARE(_app_weather_old_alpha_80x50);
 LV_IMG_DECLARE(_app_thought_alpha_80x50);
 LV_IMG_DECLARE(_app_server_alpha_80x50);
+LV_IMG_DECLARE(_clock_alpha_80x50);
 
 LV_IMG_DECLARE(_bmp_DingWei_15x15);
 LV_IMG_DECLARE(_5_35x35);
