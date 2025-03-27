@@ -9,183 +9,21 @@
 #include "gui_guider.h"
 #include "events_init.h"
 #include "custom.h"
-#include "BSP/RTC/rtc.h"
-#include "BSP/WIFI/wifi_smartconfig.h"
-#include <sys/stat.h> // 用于 stat 函数
-#include <stdbool.h>  // 用于 bool 类型
-#include "esp_task_wdt.h"
 
-static char cached_paths[3][128]; // 缓存图片路径
-static uint8_t img_index = 0;     // 当前加载的图片索引
-// 获取图像路径
-const char* get_image_path(char* weather_code)
-{
-	static char path[256]; // 静态分配，避免被释放
-	snprintf(path, sizeof(path), "bmp_tianqi_40x40_%s", weather_code);
-    return path;
-}
-
-// 创建一个表盘对象
-lv_obj_t *meter;
-// 创建一个图像路径对象
-char *image_jinri_path; // 用于存储完整路径
-char *image_mingri_path; // 用于存储完整路径
-char *image_houri_path; // 用于存储完整路径
-bool image_set = false;
-// 静态变量，用于保存上一次设置的路径
-static char last_image_path_tianqi[256] = {0};
-static char last_image_path_jintian[256] = {0};
-static char last_image_path_mingtian[256] = {0};
-static char last_image_path_houtian[256] = {0};
+#include "lvgl/lvgl.h"
 
 // 声明时针、分针和秒针的指针变量
-static lv_meter_indicator_t *indic_hour = NULL;
-static lv_meter_indicator_t *indic_min = NULL;
-static lv_meter_indicator_t *indic_sec = NULL;
+lv_meter_indicator_t *indic_hour = NULL;
+lv_meter_indicator_t *indic_min = NULL;
+lv_meter_indicator_t *indic_sec = NULL;
 
 // 初始时间：3点20分50秒
 int screen_2_analog_clock_hour_value = 0;
 int screen_2_analog_clock_min_value = 0;
 int screen_2_analog_clock_sec_value = 0;
-lv_img_dsc_t* get_image_descriptor(char* weather_code) {
-    // 将 weather_code 转换为对应的数值（如果是数字字符串）
-    int num = atoi(weather_code);  // 转换字符串为整数
-	// printf("weather_code:%s\n",weather_code);
-	// printf("num:%d\n",num);
-    // 判断数字是否在合法范围内（0-38 或 99）
-    if ((num >= 0 && num <= 38) || num == 99) {
-        // 使用数组来存储图像描述符
-        static lv_img_dsc_t* image_desc[] = {
-            &bmp_tianqi_40x40_0, &bmp_tianqi_40x40_1, &bmp_tianqi_40x40_2,
-            &bmp_tianqi_40x40_3, &bmp_tianqi_40x40_4, &bmp_tianqi_40x40_5,
-			&bmp_tianqi_40x40_6, &bmp_tianqi_40x40_7, &bmp_tianqi_40x40_8,
-			&bmp_tianqi_40x40_9, &bmp_tianqi_40x40_10, &bmp_tianqi_40x40_11,
-			&bmp_tianqi_40x40_12, &bmp_tianqi_40x40_13, &bmp_tianqi_40x40_14,
-			&bmp_tianqi_40x40_15, &bmp_tianqi_40x40_16, &bmp_tianqi_40x40_17,
-			&bmp_tianqi_40x40_18, &bmp_tianqi_40x40_19, &bmp_tianqi_40x40_20,
-			&bmp_tianqi_40x40_21, &bmp_tianqi_40x40_22, &bmp_tianqi_40x40_23,
-			&bmp_tianqi_40x40_24, &bmp_tianqi_40x40_25, &bmp_tianqi_40x40_26,
-			&bmp_tianqi_40x40_27, &bmp_tianqi_40x40_28, &bmp_tianqi_40x40_29,
-			&bmp_tianqi_40x40_30, &bmp_tianqi_40x40_31, &bmp_tianqi_40x40_32,
-			&bmp_tianqi_40x40_33, &bmp_tianqi_40x40_34, &bmp_tianqi_40x40_35,
-			&bmp_tianqi_40x40_36, &bmp_tianqi_40x40_37, &bmp_tianqi_40x40_38,
-            &bmp_tianqi_40x40_99
-        };
-        // 判断 weather_code 是否在有效范围内并返回相应的图像描述符
-        if (num <= 38 || num == 99) {
-            return image_desc[num];  // 根据 weather_code 的值返回图像描述符
-        }
-    }
-    return NULL;  // 如果 weather_code 不在有效范围内，返回 NULL
-}
 
-
-// 定时器回调函数，用于更新时间
-void screen_2_analog_clock_timer(lv_timer_t *timer)
-{
-	// printf("current_screen: %d\r\n",current_screen);
-	if(current_screen == SCREEN_2)
-	{
-		uint8_t m_hours = 0;
-		// 更新时间
-		sync_systime_to_mytime();
-		    // 打印时间信息
-   		printf("SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
-           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
-           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
-		if(g_my_lvgl_hours >= 12)
-		{
-			m_hours = g_my_lvgl_hours - 12;
-		}else
-		{
-			m_hours = g_my_lvgl_hours;
-		}
-		// 检查控件是否有效
-		if (lv_obj_is_valid(meter))
-		{
-			// 设置时针、分针和秒针的位置
-			// 时针每小时移动30度，每分钟移动0.5度
-			lv_meter_set_indicator_value(meter, indic_hour, m_hours * 30 + g_my_lvgl_minutes / 2);
-			// 分针每分钟移动6度
-			lv_meter_set_indicator_value(meter, indic_min, g_my_lvgl_minutes * 6);
-			// 秒针每秒移动6度
-			lv_meter_set_indicator_value(meter, indic_sec, g_my_lvgl_seconds * 6);
-		}
-	}
-	else if(current_screen == SCREEN_3)
-	{
-		sync_systime_to_mytime();
-		/*明天和后天的日期显示*/
-		char temp_buf[50] = {0};
-        strncpy(temp_buf, daily_weather[1].date + 5, 5);
-        temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
-		lv_label_set_text(guider_ui.screen_3_label_mingtianriqi,temp_buf);
-		memset(temp_buf,0,20);
-        strncpy(temp_buf, daily_weather[2].date + 5, 5);
-        temp_buf[5] = '\0'; // 确保字符串以 '\0' 结尾
-		lv_label_set_text(guider_ui.screen_3_label_houtianriqi,temp_buf);
-
-		/*今天日期和时间显示*/
-		sprintf(temp_buf,"%4d-%02d-%02d",g_my_lvgl_year,g_my_lvgl_month,g_my_lvgl_day);
-		lv_label_set_text(guider_ui.screen_3_label_riqi,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%02d-%02d",g_my_lvgl_month,g_my_lvgl_day);
-		lv_label_set_text(guider_ui.screen_3_label_wenduriqi,temp_buf);
-		lv_label_set_text(guider_ui.screen_3_label_jintianriqi,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%02d:%02d",g_my_lvgl_hours,g_my_lvgl_minutes);
-		lv_label_set_text(guider_ui.screen_3_label_time,temp_buf);
-		lv_label_set_text(guider_ui.screen_3_label_xingqi,weekday_str);
-		lv_label_set_text(guider_ui.screen_3_label_dingwei,City_Name);
-
-		/*天气相关显示*/
-		/* 天气*/
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s",daily_weather[0].text_day);
-		lv_label_set_text(guider_ui.screen_3_label_1,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s°",daily_weather[0].high);
-		lv_label_set_text(guider_ui.screen_3_label_gaowen,temp_buf);
-		// lv_label_set_text(guider_ui.screen_3_label_wendu,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s",daily_weather[0].high);
-		lv_label_set_text(guider_ui.screen_3_label_wendu,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s°",daily_weather[0].low);
-		lv_label_set_text(guider_ui.screen_3_label_diwen,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s%%",daily_weather[0].humidity);
-		lv_label_set_text(guider_ui.screen_3_label_jiangshui,temp_buf);
-		memset(temp_buf,0,20);
-		sprintf(temp_buf,"%s",daily_weather[0].wind_speed);
-		lv_label_set_text(guider_ui.screen_3_label_fengsu,temp_buf);
-		/*风向*/
-		// 使用 strstr 查找子字符串
-		if (strstr(daily_weather[0].wind_direction, "无"))
-		{
-			memset(temp_buf,0,20);
-			sprintf(temp_buf,"%s","无风");
-			lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
-		}
-		else
-		{
-			memset(temp_buf,0,20);
-			sprintf(temp_buf,"%s",daily_weather[0].wind_direction);
-			lv_label_set_text(guider_ui.screen_3_label_fengxiang,temp_buf);
-		}
-		//test
-		// memcpy(daily_weather[0].code_day,"1",2);
-		// memcpy(daily_weather[1].code_day,"7",2);
-		// memcpy(daily_weather[2].code_day,"11",3);
-		// 缓存上次的路径
-		lv_img_set_src(guider_ui.screen_3_img_tianqi, get_image_descriptor(daily_weather[0].code_day));
-		lv_img_set_src(guider_ui.screen_3_img_jintian, get_image_descriptor(daily_weather[0].code_day));
-		lv_img_set_src(guider_ui.screen_3_img_mingtian, get_image_descriptor(daily_weather[1].code_day));
-		lv_img_set_src(guider_ui.screen_3_img_houtian, get_image_descriptor(daily_weather[2].code_day));
-	}
-}
-
-#include "lvgl/lvgl.h"
+// 创建一个表盘对象
+lv_obj_t *meter;
 
 void create_analog_clock(lv_obj_t *parent) {
     // 创建一个表盘对象
@@ -355,12 +193,6 @@ void setup_scr_screen_2(lv_ui *ui)
 								uint32_t angle_range, uint32_t rotation);
 	*/
 
-    // 创建定时器
-    static bool screen_2_analog_clock_timer_enabled = false;
-    if (!screen_2_analog_clock_timer_enabled) {
-        lv_timer_create(screen_2_analog_clock_timer, 1000, NULL);  // 每秒更新一次时间
-        screen_2_analog_clock_timer_enabled = true;
-    }
     // 初始化事件
     events_init_screen_2(ui);
 }

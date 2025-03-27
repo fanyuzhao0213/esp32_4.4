@@ -19,6 +19,7 @@
 #include <sys/time.h>
 #include "esp_sntp.h"
 
+extern SemaphoreHandle_t systerminit_semaphore;
 
 #define WIFI_CONNECT_BIT            BIT0
 #define Timeout_GetWeather_BIT      BIT1

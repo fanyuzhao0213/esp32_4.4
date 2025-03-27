@@ -109,10 +109,9 @@ void SD_Init(void)
     // 打印SD卡信息
     sdmmc_card_print_info(stdout, card);
     SDCard_Size = ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024);
-
-    const char my_listpath[] =  "/sdcard/MY_IMAGE/WHITE";
     list_files_in_directory(MOUNT_POINT);
-    list_files_in_directory(my_listpath);
+    // const char my_listpath[] =  "/sdcard/MY_IMAGE/WHITE";
+    // list_files_in_directory(my_listpath);
 }
 
 // 列出 SD 卡中指定目录下的所有文件

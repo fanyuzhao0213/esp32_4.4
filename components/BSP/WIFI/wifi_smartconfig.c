@@ -199,7 +199,11 @@ void initialize_sntp(void)
     }
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");  // 设置 NTP 服务器，可以换成其他服务器
+    sntp_setservername(0, "pool.ntp.org");      // 默认服务器
+    sntp_setservername(1, "time.google.com");   // 谷歌全球服务器（响应快）
+    sntp_setservername(2, "time.nist.gov");     // 美国国家标准局服务器
+    sntp_setservername(3, "ntp.aliyun.com");    // 阿里云国内服务器
+    sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);   // 主动同步模式
     sntp_init();
     set_timezone();
 }
@@ -233,7 +237,8 @@ void obtain_time(void)
         }
 
     }
-
+    xSemaphoreGive(systerminit_semaphore);
+    ESP_LOGE(TAG, "信号量释放成功");
     // 获取当前时间
     time(&now);
     localtime_r(&now, &timeinfo);

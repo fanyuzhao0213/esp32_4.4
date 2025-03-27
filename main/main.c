@@ -28,7 +28,8 @@
 
 
 // 创建信号量
-SemaphoreHandle_t img_update_semaphore;
+SemaphoreHandle_t systerminit_semaphore;
+
 uint8_t lvgl_systerm_ready_flag = 0;
 
 #define DEFAULT_FD_NUM          5
@@ -271,7 +272,11 @@ static void print_chip_info(void)
 
 //WIFI 任务
 void wifi_init(void)
-{
+{    // 创建二进制信号量（推荐静态分配）
+    systerminit_semaphore = xSemaphoreCreateBinary();
+    if (systerminit_semaphore == NULL) {
+        ESP_LOGE(TAG, "信号量创建失败");
+    }
     //创建事件标志组
     g_event_group = xEventGroupCreate();
     wifi_sta_init();                         //wifi STA工作模式初始化
@@ -291,6 +296,8 @@ void wifi_init(void)
         //start http  task
         obtain_time();
         mqtt_start();
+        // 创建LVGL任务
+        xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
 		xTaskCreate(http_client_task, "http_client", 5120, NULL, 6, NULL);
     }
 }
@@ -305,7 +312,6 @@ static void lvgl_task(void *arg)
     lv_fs_if_init();
     lv_port_disp_init();                   // 初始化显示器
     lv_port_indev_init();                  // 初始化触摸屏
-
     // 创建周期性定时器以调用lv_tick_inc
     const esp_timer_create_args_t periodic_timer_args = {
         .callback = &lv_tick_task,
@@ -320,11 +326,9 @@ static void lvgl_task(void *arg)
     printf("scr_act_width() %d\n",scr_act_width());
     printf("LVGL与定时器初始化完成\n");
 
-    // // 加载LVGL widgets示例-
-    // lv_demo_widgets();
+    //实际lvgl调用这个函数
     lv_mainstart();
     printf("LVGL Widgets demo加载完成\n");
-    lvgl_systerm_ready_flag = 1;
     // LVGL任务循环
     while (1)
     {
@@ -355,8 +359,6 @@ void app_main(void)
     ESP_LOGI(MAINTAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
     qmi8658_init(); // 初始化qmi8658芯片
     wifi_init();
-    // 创建LVGL任务
-    xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
     // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 
 }

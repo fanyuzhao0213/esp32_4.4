@@ -17,6 +17,7 @@
     LV_FONT_DECLARE(lv_font_arial_26)
     LV_FONT_DECLARE(lv_customer_font_IBMPlexSansSC_SemiBold_20)
     LV_FONT_DECLARE(lv_font_Acme_Regular_10)
+    LV_FONT_DECLARE(lv_font_Acme_Regular_20)
 
 
     #ifdef __cplusplus

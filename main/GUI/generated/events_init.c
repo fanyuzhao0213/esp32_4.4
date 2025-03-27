@@ -16,8 +16,19 @@ void update_slider_label(lv_obj_t *slider, lv_obj_t *label) {
 }
 
 // 切换屏幕的函数
-void switch_screen(screen_state_t new_screen) {
+void switch_screen(screen_state_t new_screen)
+{
     switch (new_screen) {
+        case SCREEN_INIT:
+            if (guider_ui.screen_init_del == true)
+                setup_scr_screen_init(&guider_ui);
+            lv_scr_load_anim(guider_ui.screen_init, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+            break;
+        case SCREEN_SYSTERM:
+            if (guider_ui.screen_systerm_del == true)
+                setup_scr_screen_systerm(&guider_ui);
+            lv_scr_load_anim(guider_ui.screen_systerm, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+            break;
         case SCREEN_HOME:
             if (guider_ui.screen_home_del == true)
                 setup_scr_screen_home(&guider_ui);
@@ -35,6 +46,34 @@ void switch_screen(screen_state_t new_screen) {
             break;
     }
     current_screen = new_screen;  // 更新当前屏幕状态
+}
+
+static void screen_systerm_imgbtn_weather_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            switch_screen(SCREEN_3);  // 切换到屏幕 3
+			// if (guider_ui.screen_3_del == true)
+			// 	setup_scr_screen_3(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_3, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_systerm_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void events_init_screen_systerm(lv_ui *ui)
+{
+	lv_obj_add_event_cb(ui->screen_systerm_imgbtn_weather, screen_systerm_imgbtn_weather_event_handler, LV_EVENT_ALL, NULL);
 }
 
 // 屏幕 1 的事件处理函数

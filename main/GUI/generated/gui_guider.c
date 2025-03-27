@@ -10,6 +10,8 @@
 
 
 void init_scr_del_flag(lv_ui *ui){
+	ui->screen_init_del = true;
+    ui->screen_systerm_del = true;
 	ui->screen_home_del = true;
 	ui->screen_2_del = true;
 	ui->screen_3_del = true;
@@ -17,8 +19,8 @@ void init_scr_del_flag(lv_ui *ui){
 
 void setup_ui(lv_ui *ui){
 	init_scr_del_flag(ui);
-	setup_scr_screen_home(ui);
-	lv_scr_load(ui->screen_home);
+	setup_scr_screen_init(ui);
+	lv_scr_load(ui->screen_init);
 }
 
 void clock_count(int *hour, int *min, int *sec)
