@@ -11,6 +11,7 @@
 #include "custom.h"
 #include "BSP/RTC/rtc.h"
 #include "BSP/WIFI/wifi_smartconfig.h"
+#include "BSP/WEATHER/bilibili.h"
 #include "esp_task_wdt.h"
 
 static char cached_paths[3][128]; // 缓存图片路径
@@ -71,6 +72,20 @@ lv_img_dsc_t* get_image_descriptor(char* weather_code) {
 void screen_systerm_timer(lv_timer_t *timer)
 {
 	// printf("current_screen: %d\r\n",current_screen);
+	if(current_screen == SCREEN_BILIBILI)
+	{
+		if(g_GetBiliBili_Info_Flag == 1)
+		{
+			printf("Parsed data: MID:%s, 关注:%s, 粉丝:%s, 黑名单:%s",
+			current_user.mid, current_user.following,
+			current_user.follower, current_user.black);
+			g_GetBiliBili_Info_Flag = 0;
+			lv_label_set_text(guider_ui.screen_bilibili_label_UserID,current_user.mid);
+			lv_label_set_text(guider_ui.screen_bilibili_label_Flowers,current_user.following);
+			lv_label_set_text(guider_ui.screen_bilibili_label_Fans,current_user.follower);
+			lv_label_set_text(guider_ui.screen_bilibili_label_BlackList,current_user.black);
+		}
+	}
 	if(current_screen == SCREEN_2)
 	{
 		uint8_t m_hours = 0;

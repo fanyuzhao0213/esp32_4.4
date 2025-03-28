@@ -28,6 +28,9 @@
         "lv_assert.h": "c",
         "ff.h": "c",
         "system_error": "c",
-        "lv_fs_if.h": "c"
+        "lv_fs_if.h": "c",
+        "bilibili.h": "c",
+        "simple_wifi_sta.h": "c",
+        "lv_animimg.h": "c"
     }
 }

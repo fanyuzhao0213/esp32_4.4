@@ -49,6 +49,20 @@ typedef struct
 	lv_obj_t *screen_systerm_label_6;
 	lv_obj_t *screen_systerm_label_8;
 	lv_obj_t *screen_systerm_label_9;
+	lv_obj_t *screen_bilibili;
+	bool screen_bilibili_del;
+	lv_obj_t *screen_bilibili_img_beijing;
+	lv_obj_t *screen_bilibili_btn_home;
+	lv_obj_t *screen_bilibili_btn_home_label;
+	lv_obj_t *screen_bilibili_animimg_1;
+	lv_obj_t *screen_bilibili_label_Flowers;
+	lv_obj_t *screen_bilibili_label_Fans;
+	lv_obj_t *screen_bilibili_label_BlackList;
+	lv_obj_t *screen_bilibili_label_UserID;
+	lv_obj_t *screen_bilibili_label_3;
+	lv_obj_t *screen_bilibili_label_2;
+	lv_obj_t *screen_bilibili_label_4;
+	lv_obj_t *screen_bilibili_label_1;
 	lv_obj_t *screen_home;
 	bool screen_home_del;
 	lv_obj_t *screen_home_jiasu;
@@ -121,6 +135,7 @@ void setup_ui(lv_ui *ui);
 extern lv_ui guider_ui;
 void setup_scr_screen_init(lv_ui *ui);
 void setup_scr_screen_systerm(lv_ui *ui);
+void setup_scr_screen_bilibili(lv_ui *ui);
 void setup_scr_screen_home(lv_ui *ui);
 void setup_scr_screen_2(lv_ui *ui);
 void clock_count(int *hour, int *min, int *sec);
@@ -185,8 +200,12 @@ LV_IMG_DECLARE(bmp_tianqi_40x40_37);
 LV_IMG_DECLARE(bmp_tianqi_40x40_38);
 LV_IMG_DECLARE(bmp_tianqi_40x40_99);
 
+LV_IMG_DECLARE(_bilibili_beijing_320x240);
 
-
+#include "extra/widgets/animimg/lv_animimg.h"
+LV_IMG_DECLARE(screen_bilibili_animimg_1bilibili_01)
+LV_IMG_DECLARE(screen_bilibili_animimg_1bilibili_02)
+LV_IMG_DECLARE(screen_bilibili_animimg_1bilibili_03)
 #include "extra/widgets/animimg/lv_animimg.h"
 LV_IMG_DECLARE(screen_init_animimg_1bmp_bilibili_01_01)
 LV_IMG_DECLARE(screen_init_animimg_1bmp_bilibili_01_02)

@@ -14,6 +14,7 @@
 #include "wifi_smartconfig.h"
 #include "freertos/event_groups.h"
 #include "weather.h"
+#include "bilibili.h"
 #include "simple_wifi_sta.h"
 #include  "mqtt.h"
 #include "iic.h"
@@ -361,7 +362,6 @@ void app_main(void)
     qmi8658_init(); // 初始化qmi8658芯片
     wifi_init();
     // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
-
 }
 
 

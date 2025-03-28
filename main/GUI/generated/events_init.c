@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include "lvgl.h"
 #include "BSP/WEATHER/weather.h"
+#include "BSP/WEATHER/bilibili.h"
 
 //保存协议栈
 TaskHandle_t xHttpTask = NULL;
+TaskHandle_t xBiliBiliTask = NULL;
 
 // 全局变量
 screen_state_t current_screen = SCREEN_HOME;  // 当前屏幕状态
@@ -32,6 +34,12 @@ void switch_screen(screen_state_t new_screen)
             if (guider_ui.screen_systerm_del == true)
                 setup_scr_screen_systerm(&guider_ui);
             lv_scr_load_anim(guider_ui.screen_systerm, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+            break;
+        case SCREEN_BILIBILI:
+            xTaskCreate(fetch_bilibili_info_task, "fetch_bilibili_info_task", 5120, NULL, 6, &xBiliBiliTask);
+            if (guider_ui.screen_bilibili_del == true)
+                setup_scr_screen_bilibili(&guider_ui);
+            lv_scr_load_anim(guider_ui.screen_bilibili, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
             break;
         case SCREEN_HOME:
             if (guider_ui.screen_home_del == true)
@@ -76,6 +84,29 @@ static void screen_systerm_imgbtn_weather_event_handler(lv_event_t *e)
 	}
 }
 
+static void screen_systerm_imgbtn_bili_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            switch_screen(SCREEN_BILIBILI);
+			// if (guider_ui.screen_bilibili_del == true)
+			// 	setup_scr_screen_bilibili(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_bilibili, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_systerm_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
 static void screen_systerm_imgbtn_2051_event_handler(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
@@ -102,7 +133,40 @@ static void screen_systerm_imgbtn_2051_event_handler(lv_event_t *e)
 void events_init_screen_systerm(lv_ui *ui)
 {
 	lv_obj_add_event_cb(ui->screen_systerm_imgbtn_weather, screen_systerm_imgbtn_weather_event_handler, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui->screen_systerm_imgbtn_2051, screen_systerm_imgbtn_2051_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui->screen_systerm_imgbtn_bili, screen_systerm_imgbtn_bili_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui->screen_systerm_imgbtn_2051, screen_systerm_imgbtn_2051_event_handler, LV_EVENT_ALL, NULL);
+}
+static void screen_bilibili_btn_home_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		lv_disp_t * d = lv_obj_get_disp(lv_scr_act());
+		if (d->prev_scr == NULL && d->scr_to_load == NULL)
+		{
+            // 需要销毁时
+            if (xBiliBiliTask != NULL) {
+                vTaskDelete(xBiliBiliTask);
+                xBiliBiliTask = NULL; // 避免野指针
+            }
+            switch_screen(SCREEN_SYSTERM);
+			// if (guider_ui.screen_systerm_del == true)
+			// 	setup_scr_screen_systerm(&guider_ui);
+			// lv_scr_load_anim(guider_ui.screen_systerm, LV_SCR_LOAD_ANIM_OVER_TOP, 0, 0, true);
+		}
+		guider_ui.screen_bilibili_del = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void events_init_screen_bilibili(lv_ui *ui)
+{
+	lv_obj_add_event_cb(ui->screen_bilibili_btn_home, screen_bilibili_btn_home_event_handler, LV_EVENT_ALL, NULL);
 }
 
 // 屏幕 1 的事件处理函数

@@ -19,17 +19,21 @@ extern "C" {
 typedef enum {
     SCREEN_INIT,
     SCREEN_SYSTERM,
+    SCREEN_BILIBILI,
     SCREEN_HOME,
     SCREEN_2,
     SCREEN_3
 } screen_state_t;
+
+extern screen_state_t current_screen;  // 当前屏幕状态
+
 
 void events_init(lv_ui *ui);
 void events_init_screen_systerm(lv_ui *ui);
 void events_init_screen_home(lv_ui *ui);
 void events_init_screen_2(lv_ui *ui);
 void events_init_screen_3(lv_ui *ui);
-extern screen_state_t current_screen;  // 当前屏幕状态
+void events_init_screen_bilibili(lv_ui *ui);
 
 extern const char* get_image_path(char* weather_code);
 extern char *image_jinri_path; // 用于存储完整路径
