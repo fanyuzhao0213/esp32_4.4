@@ -133,7 +133,7 @@ esp_err_t I2C_FN(_init)(i2c_port_t port) {
 		I2C_FN(_mutex)[port] = xSemaphoreCreateMutex();
 
 		i2c_config_t conf = {0};
-		
+
 		#ifdef HAS_CLK_FLAGS
 			conf.clk_flags = 0;
 		#endif

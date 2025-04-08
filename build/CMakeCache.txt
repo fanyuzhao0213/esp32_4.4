@@ -14,6 +14,12 @@
 # EXTERNAL cache entries
 ########################
 
+//No help, variable specified on the command line.
+CCACHE_ENABLE:UNINITIALIZED=1
+
+//Path to a program.
+CCACHE_FOUND:FILEPATH=F:/esp_idf_4.4.8/tools/tools/ccache/4.3/ccache-4.3-windows-64/ccache.exe
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=F:/esp_idf_4.4.8/tools/tools/xtensa-esp32s3-elf/esp-2021r2-patch5-8.4.0/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-addr2line.exe
 
@@ -287,7 +293,7 @@ ENABLE_ZLIB_SUPPORT:BOOL=OFF
 ESP_PLATFORM:UNINITIALIZED=1
 
 //Git command line client
-GIT_EXECUTABLE:FILEPATH=F:/esp_idf_4.4.8/tools/tools/idf-git/2.39.2/cmd/git.exe
+GIT_EXECUTABLE:FILEPATH=D:/espidf/tools/tools/idf-git/2.39.2/cmd/git.exe
 
 //IDF Build Target
 IDF_TARGET:STRING=esp32s3
@@ -794,7 +800,7 @@ CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS
 C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS:INTERNAL=1
 //Details about finding Git
-FIND_PACKAGE_MESSAGE_DETAILS_Git:INTERNAL=[F:/esp_idf_4.4.8/tools/tools/idf-git/2.39.2/cmd/git.exe][v2.39.2.windows.1()]
+FIND_PACKAGE_MESSAGE_DETAILS_Git:INTERNAL=[D:/espidf/tools/tools/idf-git/2.39.2/cmd/git.exe][v2.39.2.windows.1()]
 //Details about finding Python3
 FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[F:/esp_idf_4.4.8/tools/python_env/idf4.4_py3.8_env/Scripts/python.exe][cfound components: Interpreter ][v3.8.7()]
 //ADVANCED property for variable: GIT_EXECUTABLE

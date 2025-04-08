@@ -17,20 +17,22 @@
 #include "bilibili.h"
 #include "simple_wifi_sta.h"
 #include  "mqtt.h"
-#include "iic.h"
-#include "QMI8658.h"
-#include "rtc.h"
-#include "SD_MMC.h"
 #include "esp_spiffs.h"
 #include "esp_vfs.h"
 #include "nvs_flash.h"
 #include "my_gui.h"
 #include "lv_fs_if/lv_fs_if.h"
+#include "esp_task_wdt.h"
 
+#include "pwm.h"
+#include "BAT_Driver.h"
+#include "iic.h"
+#include "QMI8658.h"
+#include "PCF85063.h"
+#include "SD_MMC.h"
 
 // 创建信号量
 SemaphoreHandle_t systerminit_semaphore;
-
 uint8_t lvgl_systerm_ready_flag = 0;
 
 #define DEFAULT_FD_NUM          5
@@ -40,7 +42,7 @@ static const char               *TAG = "spiffs";
 /*********************
  *      DEFINES
  *********************/
-#define LVGL_TASK_STACK_SIZE   (4 * 1024)   // 定义LVGL任务的堆栈大小（字节）
+#define LVGL_TASK_STACK_SIZE   (8196)   // 定义LVGL任务的堆栈大小（字节）
 #define LVGL_TASK_PRIORITY     3            // 定义LVGL任务的优先级
 #define LV_TICK_PERIOD_MS      1           // 心跳周期为1ms
 
@@ -276,9 +278,9 @@ void wifi_init(void)
 {    // 创建二进制信号量（推荐静态分配）
     systerminit_semaphore = xSemaphoreCreateBinary();
     if (systerminit_semaphore == NULL) {
-        ESP_LOGE(TAG, "信号量创建失败");
+        ESP_LOGE("wifi", "信号量创建失败");
     }else{
-        ESP_LOGE(TAG, "信号量创建成功");
+        ESP_LOGI("wifi", "信号量创建成功");
     }
     //创建事件标志组
     g_event_group = xEventGroupCreate();
@@ -298,11 +300,66 @@ void wifi_init(void)
         //获取weather 任务启动
         //start http  task
         obtain_time();
-        mqtt_start();
+        // mqtt_start();
         // 创建LVGL任务
-        xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
     }
 }
+
+#include "ff.h"
+#include <stdio.h>
+#include "ffconf.h"
+
+void list_files(const char *path) {
+    DIR dir;
+    FILINFO fno;
+
+    // 先检查文件是否存在
+    if (f_stat("0:/image/01.png", &fno) == FR_OK) {
+        printf("文件存在: %s (大小: %llu 字节)\n", fno.fname, (unsigned long long) fno.fsize);
+    } else {
+        printf("文件 01.png 不存在\n");
+    }
+
+#if FF_USE_LFN
+    static char lfn[FF_LFN_BUF + 1]; // 长文件名缓冲区
+    fno.fname = lfn;   // 绑定长文件名
+#endif
+
+    // 打开目录
+    FRESULT res = f_opendir(&dir, path);
+    if (res == FR_OK) {
+        while (1) {
+            res = f_readdir(&dir, &fno);  // 读取下一个文件/目录
+            if (res != FR_OK || fno.fname[0] == 0) break;  // 遍历完成或出错
+
+            // 选择文件名
+            const char *filename;
+#if FF_USE_LFN
+            filename = (fno.fname[0] != 0) ? fno.fname : fno.altname;
+#else
+            filename = fno.fname;
+#endif
+
+            // 打印文件信息
+            printf("%s %s (大小: %llu 字节)\n",
+                   (fno.fattrib & AM_DIR) ? "[DIR]" : "[FILE]",
+                   filename, (unsigned long long) fno.fsize);
+
+            // 如果是目录，可以递归显示目录中的文件
+            if (fno.fattrib & AM_DIR) {
+                char new_path[128];
+                snprintf(new_path, sizeof(new_path), "%s/%s", path, filename);
+                list_files(new_path);  // 递归显示子目录中的文件
+            }
+        }
+        f_closedir(&dir);
+    } else {
+        printf("无法打开目录: %s (错误码: %d)\n", path, res);
+    }
+}
+
+
+
 
 // LVGL任务，处理GUI更新
 static void lvgl_task(void *arg)
@@ -311,9 +368,11 @@ static void lvgl_task(void *arg)
     /* 初始化SD卡 */
     SD_Init();
     lv_init();                             // 初始化LVGL
-    lv_fs_if_init();
+    // lv_fs_if_init();
     lv_port_disp_init();                   // 初始化显示器
     lv_port_indev_init();                  // 初始化触摸屏
+    //初始化pwm控制背光，系统接口没找着
+    pwm_init(LEDC_PWM_RESOLUTION, 1000);    // 初始化PWM：8位分辨率，1kHz频率
     // 创建周期性定时器以调用lv_tick_inc
     const esp_timer_create_args_t periodic_timer_args = {
         .callback = &lv_tick_task,
@@ -331,6 +390,9 @@ static void lvgl_task(void *arg)
     //实际lvgl调用这个函数
     lv_mainstart();
     printf("LVGL Widgets demo加载完成\n");
+    // list_files("/sdcard");
+    // list_files("0:/image");
+
     // LVGL任务循环
     while (1)
     {
@@ -351,16 +413,39 @@ void my_spiffs_init(void)
  **********************/
 
 static const char *MAINTAG = "MAIN"; // 定义日志标签
-i2c_obj_t i2c1_master;
 
+void Driver_Loop(void *parameter)
+{
+    while(1)
+    {
+        QMI8658_Loop();
+        PCF85063_Loop();
+        sync_systime_to_mytime();
+        // PWR_Loop();
+        BAT_Get_Volts();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    vTaskDelete(NULL);
+}
+
+void HardWare_Init(void)
+{
+    // PWR_Init();
+    BAT_Init();
+    I2C_Init();
+    PCF85063_Init();
+    QMI8658_Init();
+    Flash_Searching();
+    xTaskCreatePinnedToCore(Driver_Loop,"Other Driver task",4096,NULL,3,NULL,0);
+}
 void app_main(void)
 {
     print_chip_info();                  // 打印芯片信息和重启原因
     my_spiffs_init();
-    ESP_ERROR_CHECK(bsp_i2c_init());  // 初始化I2C总线
-    ESP_LOGI(MAINTAG, "I2C initialized successfully"); // 输出I2C初始化成功的信息
-    qmi8658_init(); // 初始化qmi8658芯片
+    xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
+    HardWare_Init();
     wifi_init();
+    // xTaskCreatePinnedToCore(Driver_Loop,"Other Driver task", 4096,NULL, 3,NULL,0);
     // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 }
 

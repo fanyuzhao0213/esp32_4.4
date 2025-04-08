@@ -23,8 +23,9 @@
 
 /* 引脚以及重要参数定义 */
 #define LEDC_PWM_TIMER          LEDC_TIMER_0            /* 使用定时器0 */
-#define LEDC_PWM_CH0_GPIO       GPIO_NUM_5             /* LED控制器通道对应GPIO */
+#define LEDC_PWM_CH0_GPIO       GPIO_NUM_5              /* LED控制器通道对应GPIO */
 #define LEDC_PWM_CH0_CHANNEL    LEDC_CHANNEL_1          /* LED控制器通道号 */
+#define LEDC_PWM_RESOLUTION     LEDC_TIMER_10_BIT        // 10位分辨率(0-1024)
 
 /* 函数声明 */
 void pwm_init(uint8_t resolution, uint16_t freq);       /* 初始化PWM */

@@ -31,6 +31,12 @@
         "lv_fs_if.h": "c",
         "bilibili.h": "c",
         "simple_wifi_sta.h": "c",
-        "lv_animimg.h": "c"
+        "lv_animimg.h": "c",
+        "adc1.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "iic.h": "c",
+        "bat_driver.h": "c",
+        "pwm.h": "c"
     }
 }

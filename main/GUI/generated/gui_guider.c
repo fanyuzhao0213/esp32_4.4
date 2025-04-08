@@ -11,8 +11,10 @@
 
 void init_scr_del_flag(lv_ui *ui){
 	ui->screen_init_del = true;
-    ui->screen_systerm_del = true;
-    ui->screen_bilibili_del = true;
+	ui->screen_systerm_del = true;
+	ui->screen_setting_del = true;
+	ui->screen_bilibili_del = true;
+	ui->screen_Picture_del = true;
 	ui->screen_home_del = true;
 	ui->screen_2_del = true;
 	ui->screen_3_del = true;

@@ -1,208 +1,298 @@
 #include "QMI8658.h"
-#include <string.h>
 
-static const char *TAG = "QMI8658C"; // 定义日志标签
-t_sQMI8658 QMI8658; // 定义QMI8658结构体变量
+IMUdata Accel;
+IMUdata Gyro;
+
+uint8_t Device_addr ; // default for SD0/SA0 low, 0x6A if high
+acc_scale_t acc_scale = ACC_RANGE_4G;         // 加速度计量程(默认±4g)
+gyro_scale_t gyro_scale = GYR_RANGE_64DPS;    // 陀螺仪量程(默认±64dps)
+acc_odr_t acc_odr = acc_odr_norm_8000;        // 加速度计输出数据率(8kHz)
+gyro_odr_t gyro_odr = gyro_odr_norm_8000;     // 陀螺仪输出数据率(8kHz)
+sensor_state_t sensor_state = sensor_default;  // 传感器状态
+lpf_t acc_lpf;                                // 加速度计低通滤波配置
+
+/* 传感器刻度系数 */
+float accelScales = 0;  // 加速度计LSB刻度系数(g/LSB)
+float gyroScales = 0;   // 陀螺仪LSB刻度系数(dps/LSB)
 
 
-// 创建步数结构体实例
-t_step_counter step_counter = {
-    .current_step_count = 0,
-    .previous_step_count = 0,
-    .total_step_count = 0,
-    .timestamp = 0,
-    .step_detected = false
-};
-
-/******************************************************************************/
-/***************************  I2C ↓ *******************************************/
-esp_err_t bsp_i2c_init(void)
+/* 数据缓冲区 */
+uint8_t readings[12];   // 原始数据读取缓冲区
+uint32_t reading_timestamp_us; // 最后读取时间戳(微秒)
+/**
+ * @brief QMI8658传感器初始化
+ * 功能：配置I2C通信、传感器量程、数据率和滤波器
+ */
+void QMI8658_Init(void)
 {
-    i2c_config_t i2c_conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = BSP_I2C_SDA,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = BSP_I2C_SCL,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = BSP_I2C_FREQ_HZ
-    };
-    i2c_param_config(BSP_I2C_NUM, &i2c_conf);
+    uint8_t buf[1];
+    Device_addr = QMI8658_L_SLAVE_ADDRESS;
+    I2C_Read(Device_addr, QMI8658_REVISION_ID, buf, 1);
+    printf("QMI8658 Device ID: %x\r\n",buf[0]);    // Get chip id
+    setState(sensor_running);
 
-    return i2c_driver_install(BSP_I2C_NUM, i2c_conf.mode, 0, 0, 0);
+    setAccScale(acc_scale);
+    setAccODR(acc_odr);
+    setAccLPF(LPF_MODE_0);
+    switch (acc_scale) {
+        // Possible accelerometer scales (and their register bit settings) are:
+        // 2 Gs (00), 4 Gs (01), 8 Gs (10), and 16 Gs  (11).
+        // Here's a bit of an algorith to calculate DPS/(ADC tick) based on that
+        // 2-bit value:
+        case ACC_RANGE_2G:  accelScales = 2.0 / 32768.0; break;
+        case ACC_RANGE_4G:  accelScales = 4.0 / 32768.0; break;
+        case ACC_RANGE_8G:  accelScales = 8.0 / 32768.0; break;
+        case ACC_RANGE_16G: accelScales = 16.0 / 32768.0; break;
+    }
+
+    setGyroScale(gyro_scale);
+    setGyroODR(gyro_odr);
+    setGyroLPF(LPF_MODE_3);
+    switch (gyro_scale) {
+        // Possible gyro scales (and their register bit settings) are:
+        // 250 DPS (00), 500 DPS (01), 1000 DPS (10), and 2000 DPS  (11).
+        // Here's a bit of an algorith to calculate DPS/(ADC tick) based on that
+        // 2-bit value:
+        case GYR_RANGE_16DPS: gyroScales = 16.0 / 32768.0; break;
+        case GYR_RANGE_32DPS: gyroScales = 32.0 / 32768.0; break;
+        case GYR_RANGE_64DPS: gyroScales = 64.0 / 32768.0; break;
+        case GYR_RANGE_128DPS: gyroScales = 128.0 / 32768.0; break;
+        case GYR_RANGE_256DPS: gyroScales = 256.0 / 32768.0; break;
+        case GYR_RANGE_512DPS: gyroScales = 512.0 / 32768.0; break;
+        case GYR_RANGE_1024DPS: gyroScales = 1024.0 / 32768.0; break;
+    }
 }
-/***************************  I2C ↑  *******************************************/
-/*******************************************************************************/
-
-
-/*******************************************************************************/
-/***************************  姿态传感器 QMI8658 ↓   ****************************/
-
-// 读取QMI8658寄存器的值
-esp_err_t qmi8658_register_read(uint8_t reg_addr, uint8_t *data, size_t len)
+void QMI8658_Loop(void)
 {
-    return i2c_master_write_read_device(BSP_I2C_NUM, QMI8658_SENSOR_ADDR,  &reg_addr, 1, data, len, 1000 / portTICK_PERIOD_MS);
+  getAccelerometer();
+  getGyroscope();
 }
 
-// 给QMI8658的寄存器写值
-esp_err_t qmi8658_register_write_byte(uint8_t reg_addr, uint8_t data)
+/**
+ * Transmit one uint8_t of data to QMI8658.
+ * @param addr address of data to be written
+ * @param data the data to be written
+ */
+void QMI8658_transmit(uint8_t addr, uint8_t data)
 {
-    uint8_t write_buf[2] = {reg_addr, data};
-
-    return i2c_master_write_to_device(BSP_I2C_NUM, QMI8658_SENSOR_ADDR, write_buf, sizeof(write_buf), 1000 / portTICK_PERIOD_MS);
+    I2C_Write(Device_addr, addr, &data, 1);
 }
 
-// 初始化qmi8658
-void qmi8658_init(void)
+/**
+ * Receive one uint8_t of data from QMI8658.
+ * @param addr address of data to be read
+ * @return the uint8_t of data that was read
+ */
+uint8_t QMI8658_receive(uint8_t addr)
 {
-    uint8_t id = 0; // 芯片的ID号
+    uint8_t retval;
+    I2C_Read(Device_addr, addr, &retval, 1);
+    return retval;
+}
 
-    qmi8658_register_read(QMI8658_WHO_AM_I, &id ,1); // 读芯片的ID号
-    while (id != 0x05)  // 判断读到的ID号是否是0x05
+/**
+ * Writes data to CTRL9 (command register) and waits for ACK.
+ * @param command the command to be executed
+ */
+void QMI8658_CTRL9_Write(uint8_t command)
+{
+    // transmit command
+    QMI8658_transmit(QMI8658_CTRL9, command);
+
+    // wait for command to be done
+    while (((QMI8658_receive(QMI8658_STATUSINT)) & 0x80) == 0x00);
+}
+
+/**
+ * Set output data rate (ODR) of accelerometer.
+ * @param odr acc_odr_t variable representing new data rate
+ */
+void setAccODR(acc_odr_t odr)
+{
+    if (sensor_state != sensor_default)                     // If the device is not in the default state
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);  // 延时1秒
-        qmi8658_register_read(QMI8658_WHO_AM_I, &id ,1); // 读取ID号
+        uint8_t ctrl2 = QMI8658_receive(QMI8658_CTRL2);
+        ctrl2 &= ~QMI8658_AODR_MASK;                        // clear previous setting
+        ctrl2 |= odr;                                       // OR in new setting
+        QMI8658_transmit(QMI8658_CTRL2, ctrl2);
     }
-    ESP_LOGI(TAG, "QMI8658 OK!");  // 打印信息
-
-    qmi8658_register_write_byte(QMI8658_RESET, 0xb0);  // 复位  
-    vTaskDelay(10 / portTICK_PERIOD_MS);  // 延时10ms
-    qmi8658_register_write_byte(QMI8658_CTRL1, 0x40); // CTRL1 设置地址自动增加
-    qmi8658_register_write_byte(QMI8658_CTRL7, 0x03); // CTRL7 允许加速度和陀螺仪
-    qmi8658_register_write_byte(QMI8658_CTRL2, 0x95); // CTRL2 设置ACC 4g 250Hz
-    qmi8658_register_write_byte(QMI8658_CTRL3, 0xd5); // CTRL3 设置GRY 512dps 250Hz 
+    acc_odr = odr;
 }
 
-// 假设我们在读取步数后
-void update_step_counter(uint32_t step_count) 
+/**
+ * Set output data rate (ODR) of gyro.
+ * @param odr gyro_odr_t variable representing new data rate
+ */
+void setGyroODR(gyro_odr_t odr)
 {
-    step_counter.previous_step_count = step_counter.current_step_count; // 更新上次计数
-    step_counter.current_step_count = step_count; // 更新当前步数
-    step_counter.total_step_count += step_counter.current_step_count - step_counter.previous_step_count; // 累加总步数
-    step_counter.timestamp = (uint32_t)esp_timer_get_time() / 1000; // 获取当前时间戳（毫秒）
-    
-    // 检测步数变化
-    step_counter.step_detected = (step_counter.current_step_count != step_counter.previous_step_count);
+    if (sensor_state != sensor_default)
+    {
+    uint8_t ctrl3 = QMI8658_receive(QMI8658_CTRL3);
+    ctrl3 &= ~QMI8658_GODR_MASK; // clear previous setting
+    ctrl3 |= odr; // OR in new setting
+    QMI8658_transmit(QMI8658_CTRL3, ctrl3);
+    }
+    gyro_odr = odr;
 }
 
-//读取步数
-void qmi_Read_StepCount(void)
+/**
+ * Set scale of accelerometer output.
+ * @param scale acc_scale_t variable representing new scale
+ */
+void setAccScale(acc_scale_t scale)
 {
-	// 读取步数计数
-	uint8_t step_count_low, step_count_mid, step_count_high;
-
-	// 读取步数计数低位、中位和高位
-	qmi8658_register_read(QMI8658_STEP_CNT_LOW, &step_count_low, 1);
-	qmi8658_register_read(QMI8658_STEP_CNT_MIDL, &step_count_mid, 1);
-	qmi8658_register_read(QMI8658_STEP_CNT_HIGH, &step_count_high, 1);
-
-	// 计算总步数
-	uint32_t step_count = (step_count_high << 16) | (step_count_mid << 8) | step_count_low;
-    update_step_counter(step_count);
-    // 打印步数信息
-    ESP_LOGI(TAG, "Current Steps: %u, Total Steps: %u", step_counter.current_step_count, step_counter.total_step_count);
-
+    if (sensor_state != sensor_default)
+    {
+    uint8_t ctrl2 = QMI8658_receive(QMI8658_CTRL2);
+    ctrl2 &= ~QMI8658_ASCALE_MASK; // clear previous setting
+    ctrl2 |= scale << QMI8658_ASCALE_OFFSET; // OR in new setting
+    QMI8658_transmit(QMI8658_CTRL2, ctrl2);
+    }
+    acc_scale = scale;
 }
 
-
-
-// 读取加速度和陀螺仪寄存器值
-void qmi8658_Read_AccAndGry(t_sQMI8658 *p) 
+/**
+ * Set scale of gyro output.
+ * @param scale gyro_scale_t variable representing new scale
+ */
+void setGyroScale(gyro_scale_t scale)
 {
-    uint8_t status;
-    int16_t buf[6] = {0};  // 存储传感器的原始数据
+    if (sensor_state != sensor_default)
+    {
+    uint8_t ctrl3 = QMI8658_receive(QMI8658_CTRL3);
+    ctrl3 &= ~QMI8658_GSCALE_MASK; // clear previous setting
+    ctrl3 |= scale << QMI8658_GSCALE_OFFSET; // OR in new setting
+    QMI8658_transmit(QMI8658_CTRL3, ctrl3);
+    }
+    gyro_scale = scale;
+}
 
-    // 读取状态寄存器以检查数据是否准备就绪
-    qmi8658_register_read(QMI8658_STATUS0, &status, 1);
-    if (status & 0x03) { // 检查加速度和陀螺仪数据是否可读
-        // 读取加速度和陀螺仪数据
-        qmi8658_register_read(QMI8658_AX_L, (uint8_t *)buf, 12);
+/**
+ * Set new low-pass filter value for accelerometer
+ * @param lp lpf_t variable representing new low-pass filter value
+ */
+void setAccLPF(lpf_t lpf)
+{
+    if (sensor_state != sensor_default)
+    {
+    uint8_t ctrl5 = QMI8658_receive(QMI8658_CTRL5);
+    ctrl5 &= !QMI8658_ALPF_MASK;
+    ctrl5 |= lpf << QMI8658_ALPF_OFFSET;
+    ctrl5 |= 0x01; // turn on acc low pass filter
+    QMI8658_transmit(QMI8658_CTRL5, ctrl5);
+    }
+    acc_lpf = lpf;
+}
 
-        // 去除加速度的偏置
-        p->acc_x = buf[0] - p->acc_offset[0];
-        p->acc_y = buf[1] - p->acc_offset[1];
-        p->acc_z = buf[2] - p->acc_offset[2];
-
-        // 去除陀螺仪的偏置
-        p->gyr_x = buf[3] - p->gyr_offset[0];
-        p->gyr_y = buf[4] - p->gyr_offset[1];
-        p->gyr_z = buf[5] - p->gyr_offset[2];
-
-        // 使用 ESP-IDF 日志打印校准后的数据
-        ESP_LOGI("QMI8658", "Acc - X: %d, Y: %d, Z: %d", p->acc_x, p->acc_y, p->acc_z);
-        ESP_LOGI("QMI8658", "Gyr - X: %d, Y: %d, Z: %d", p->gyr_x, p->gyr_y, p->gyr_z);
+/**
+ * Set new low-pass filter value for gyro
+ * @param lp lpf_t variable representing new low-pass filter value
+ */
+void setGyroLPF(lpf_t lpf)
+{
+    if (sensor_state != sensor_default)
+    {
+    uint8_t ctrl5 = QMI8658_receive(QMI8658_CTRL5);
+    ctrl5 &= !QMI8658_GLPF_MASK;
+    ctrl5 |= lpf << QMI8658_GLPF_OFFSET;
+    ctrl5 |= 0x10; // turn on gyro low pass filter
+    QMI8658_transmit(QMI8658_CTRL5, ctrl5);
     }
 }
 
-// 获取XYZ轴的倾角值
-void qmi8658_fetch_angleFromAcc(t_sQMI8658 *p)
+/**
+ * Set new state of QMI8658.
+ * @param state new state to transition to
+ */
+void setState(sensor_state_t state)
 {
-    float temp;
+    uint8_t ctrl1;
+    switch (state)
+    {
+    case sensor_running:
+        ctrl1 = QMI8658_receive(QMI8658_CTRL1);
+        // enable 2MHz oscillator
+        ctrl1 &= 0xFE;
+        // enable auto address increment for fast block reads
+        ctrl1 |= 0x40;
+        QMI8658_transmit(QMI8658_CTRL1, ctrl1);
 
-    qmi8658_Read_AccAndGry(p); // 读取加速度和陀螺仪的寄存器值
+        // enable high speed internal clock,
+        // acc and gyro in full mode, and
+        // disable syncSample mode
+        QMI8658_transmit(QMI8658_CTRL7, 0x43);
 
-	// 使用 ESP-IDF 日志打印加速度数据
-    ESP_LOGI(TAG, "Acceleration - X: %d, Y: %d, Z: %d", p->acc_x, p->acc_y, p->acc_z);
+        // disable AttitudeEngine Motion On Demand
+        QMI8658_transmit(QMI8658_CTRL6, 0x00);
+        break;
+    case sensor_power_down:
+        // disable high speed internal clock,
+        // acc and gyro powered down
+        QMI8658_transmit(QMI8658_CTRL7, 0x00);
 
-    // 根据寄存器值 计算倾角值 并把弧度转换成角度
-    temp = (float)p->acc_x / sqrt( ((float)p->acc_y * (float)p->acc_y + (float)p->acc_z * (float)p->acc_z) );
-    p->AngleX = atan(temp)*57.29578f; // 180/π=57.29578
-    temp = (float)p->acc_y / sqrt( ((float)p->acc_x * (float)p->acc_x + (float)p->acc_z * (float)p->acc_z) );
-    p->AngleY = atan(temp)*57.29578f; // 180/π=57.29578
-    temp = sqrt( ((float)p->acc_x * (float)p->acc_x + (float)p->acc_y * (float)p->acc_y) ) / (float)p->acc_z;
-    p->AngleZ = atan(temp)*57.29578f; // 180/π=57.29578
-}
+        ctrl1 = QMI8658_receive(QMI8658_CTRL1);
+        // disable 2MHz oscillator
+        ctrl1|= 0x01;
+        QMI8658_transmit(QMI8658_CTRL1, ctrl1);
+        break;
+    case sensor_locking:
+        ctrl1 = QMI8658_receive(QMI8658_CTRL1);
+        // enable 2MHz oscillator
+        ctrl1 &= 0xFE;
+        // enable auto address increment for fast block reads
+        ctrl1 |= 0x40;
+        QMI8658_transmit(QMI8658_CTRL1, ctrl1);
 
-// 初始化传感器，采集100次数据，计算偏置
-void qmi8658_calibrate(t_sQMI8658 *p) 
-{
-    int32_t acc_sum[3] = {0, 0, 0}; // 用于累加加速度
-    int32_t gyr_sum[3] = {0, 0, 0}; // 用于累加陀螺仪
-	ESP_LOGI(TAG, "QMI8658 SelfTest Start!");  // 打印信息
-    // 采集100次数据
-    for (int i = 0; i < 101; i++) {
-		ESP_LOGI(TAG, "i:%d",i);  // 打印信息
-        qmi8658_Read_AccAndGry(p);
-		if(i != 0)
-		{
-			acc_sum[0] += p->acc_x;
-			acc_sum[1] += p->acc_y;
-			acc_sum[2] += p->acc_z;
+        // enable high speed internal clock,
+        // acc and gyro in full mode, and
+        // enable syncSample mode
+        QMI8658_transmit(QMI8658_CTRL7, 0x83);
 
-			gyr_sum[0] += p->gyr_x;
-			gyr_sum[1] += p->gyr_y;
-			gyr_sum[2] += p->gyr_z;
-		}
-        vTaskDelay(10 / portTICK_PERIOD_MS); // 延迟10ms，避免过快采样
+        // disable AttitudeEngine Motion On Demand
+        QMI8658_transmit(QMI8658_CTRL6, 0x00);
+
+        // disable internal AHB clock gating:
+        QMI8658_transmit(QMI8658_CAL1_L, 0x01);
+        QMI8658_CTRL9_Write(0x12);
+        // re-enable clock gating
+        QMI8658_transmit(QMI8658_CAL1_L, 0x00);
+        QMI8658_CTRL9_Write(0x12);
+        break;
+    default:
+        break;
     }
-	ESP_LOGI(TAG, "QMI8658 SelfTest End!");  // 打印信息
-    // 计算平均值
-    p->acc_offset[0] = acc_sum[0] / 100.0f;
-    p->acc_offset[1] = acc_sum[1] / 100.0f;
-    p->acc_offset[2] = acc_sum[2] / 100.0f;
-
-    p->gyr_offset[0] = gyr_sum[0] / 100.0f;
-    p->gyr_offset[1] = gyr_sum[1] / 100.0f;
-    p->gyr_offset[2] = gyr_sum[2] / 100.0f;
-
-    // 打印偏置值，确保初始化完成
-    ESP_LOGI("QMI8658", "Acc offset - X: %.2f, Y: %.2f, Z: %.2f", p->acc_offset[0], p->acc_offset[1], p->acc_offset[2]);
-    ESP_LOGI("QMI8658", "Gyr offset - X: %.2f, Y: %.2f, Z: %.2f", p->gyr_offset[0], p->gyr_offset[1], p->gyr_offset[2]);
+    sensor_state = state;
 }
 
 
-// QMI8658_Task  采集六轴数据
-void QMI8658_Task(void *arg)
+void getAccelerometer(void)
 {
-	while(1)
-	{
-		qmi8658_fetch_angleFromAcc(&QMI8658);   // 获取XYZ轴的倾角
-		// 输出XYZ轴的倾角
-		ESP_LOGI(TAG, "angle_x = %.1f  angle_y = %.1f angle_z = %.1f",QMI8658.AngleX, QMI8658.AngleY, QMI8658.AngleZ);
-		qmi_Read_StepCount();
-		vTaskDelay(1000 / portTICK_PERIOD_MS);  // 延时1000ms
-	}
 
-
+    uint8_t buf[6];
+    I2C_Read(Device_addr, QMI8658_AX_L, buf, 6);
+    Accel.x = (float)((int16_t)((buf[1]<<8) | (buf[0])));
+    Accel.y = (float)((int16_t)((buf[3]<<8) | (buf[2])));
+    Accel.z = (float)((int16_t)((buf[5]<<8) | (buf[4])));
+    Accel.x = Accel.x * accelScales;
+    Accel.y = Accel.y * accelScales;
+    Accel.z = Accel.z * accelScales;
+    // printf("[加速度] X:%.3fg Y:%.3fg Z:%.3fg\n",
+    //        Accel.x, Accel.y, Accel.z);
 }
-/***************************  姿态传感器 QMI8658 ↑  ****************************/
-/*******************************************************************************/
+void getGyroscope(void)
+{
+    uint8_t buf[6];
+    I2C_Read(Device_addr, QMI8658_GX_L, buf, 6);
+    Gyro.x = (float)((int16_t)((buf[1]<<8) | (buf[0])));
+    Gyro.y = (float)((int16_t)((buf[3]<<8) | (buf[2])));
+    Gyro.z = (float)((int16_t)((buf[5]<<8) | (buf[4])));
+    Gyro.x = Gyro.x * gyroScales;
+    Gyro.y = Gyro.y * gyroScales;
+    Gyro.z = Gyro.z * gyroScales;
+    // printf("[陀螺仪] X:%.2fdps Y:%.2fdps Z:%.2fdps\n",
+    //        Gyro.x, Gyro.y, Gyro.z);
+}
+
+
+
+

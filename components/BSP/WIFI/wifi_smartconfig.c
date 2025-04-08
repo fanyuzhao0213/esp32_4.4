@@ -1,5 +1,5 @@
 #include "wifi_smartconfig.h"
-#include "rtc.h"
+#include "PCF85063.h"
 
 uint32_t g_my_lvgl_year = 0;
 uint32_t g_my_lvgl_month = 0;
@@ -217,12 +217,6 @@ void obtain_time(void)
     uint8_t timeout_count =0;
     esp_err_t err;
 
-    // 获取并输出当前时间
-    err = sys_rtc_get_time();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "获取时间失败");
-    }
-
     initialize_sntp();
     // 等待时间同步
     while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
@@ -233,14 +227,14 @@ void obtain_time(void)
         if(timeout_count >=10)
         {
             xSemaphoreGive(systerminit_semaphore);
-            ESP_LOGE(TAG, "信号量释放成功");
+            ESP_LOGI(TAG, "信号量释放成功");
             timeout_count=0;
             return;
         }
 
     }
     xSemaphoreGive(systerminit_semaphore);
-    ESP_LOGE(TAG, "信号量释放成功");
+    ESP_LOGI(TAG, "信号量释放成功");
     // 获取当前时间
     time(&now);
     localtime_r(&now, &timeinfo);
@@ -249,27 +243,21 @@ void obtain_time(void)
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time is: %s", strftime_buf);
 
-
     // 提取时间信息并设置到RTC
-    uint8_t hours = timeinfo.tm_hour;
-    uint8_t minutes = timeinfo.tm_min;
-    uint8_t seconds = timeinfo.tm_sec;
-    uint8_t day = timeinfo.tm_mday;
-    uint8_t month = timeinfo.tm_mon + 1; // tm_mon 从0开始（0表示一月），因此需要+1
-    uint8_t year = timeinfo.tm_year % 100; // tm_year 是从1900年起算的，因此我们取最后两位表示年份
-
+    datetime.hour = timeinfo.tm_hour;
+    datetime.minute = timeinfo.tm_min;
+    datetime.second= timeinfo.tm_sec;
+    datetime.day  = timeinfo.tm_mday;
+    datetime.month  = timeinfo.tm_mon + 1; // tm_mon 从0开始（0表示一月），因此需要+1
+    datetime.year  = timeinfo.tm_year + 1900; // tm_year 是从1900年起算的，因此我们取最后两位表示年份
+    datetime.dotw = timeinfo.tm_wday;
     // 打印提取出的时间信息
     ESP_LOGI(TAG, "准备同步到RTC的时间信息:");
-    ESP_LOGI(TAG, "小时: %02d, 分钟: %02d, 秒: %02d", hours, minutes, seconds);
-    ESP_LOGI(TAG, "日期: %02d, 月份: %02d, 年份: %02d", day, month, year);
-
+    ESP_LOGI(TAG, "小时: %02d, 分钟: %02d, 秒: %02d", datetime.hour, datetime.minute, datetime.second);
+    ESP_LOGI(TAG, "日期: %02d, 月份: %02d, 年份: %04d", datetime.day, datetime.month, datetime.year);
+    ESP_LOGI(TAG, "星期: %d", datetime.dotw);
     // 调用RTC设置时间的函数
-    err = rtc_set_time(hours, minutes, seconds, day, month, year);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "时间成功同步到RTC");
-    } else {
-        ESP_LOGE(TAG, "时间同步到RTC失败");
-    }
+    PCF85063_Set_All(datetime);
 }
 
 // 星期几的字符串数组
@@ -293,4 +281,9 @@ void sync_systime_to_mytime(void)
         // 解析星期几
     int weekday = timeinfo.tm_wday;  // tm_wday 的范围是 0（星期日）到 6（星期六）
     weekday_str = weekdays[weekday];  // 获取星期几的字符串
+
+
+	// printf("LOOP 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
+    //        g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
+    //        g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
 }

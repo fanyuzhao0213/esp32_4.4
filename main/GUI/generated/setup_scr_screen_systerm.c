@@ -9,10 +9,16 @@
 #include "gui_guider.h"
 #include "events_init.h"
 #include "custom.h"
-#include "BSP/RTC/rtc.h"
+#include "BSP/RTC/PCF85063.h"
 #include "BSP/WIFI/wifi_smartconfig.h"
 #include "BSP/WEATHER/bilibili.h"
 #include "esp_task_wdt.h"
+
+#include "pwm.h"
+#include "BAT_Driver.h"
+#include "iic.h"
+#include "QMI8658.h"
+#include "PCF85063.h"
 
 static char cached_paths[3][128]; // 缓存图片路径
 static uint8_t img_index = 0;     // 当前加载的图片索引
@@ -71,7 +77,37 @@ lv_img_dsc_t* get_image_descriptor(char* weather_code) {
 // 定时器回调函数，用于更新时间
 void screen_systerm_timer(lv_timer_t *timer)
 {
+	// printf("SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
+    //        g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
+    //        g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
 	// printf("current_screen: %d\r\n",current_screen);
+	//更新系统信息
+	if(current_screen == SCREEN_SETTING)
+	{
+		// 1. 定义缓冲区（防止直接操作UI对象时的内存问题）
+		char buffer[64];
+
+		// 2. 格式化并赋值加速度数据到文本区域
+		snprintf(buffer, sizeof(buffer), "X:%.3fg  Y:%.3fg  Z:%.3fg", Accel.x, Accel.y, Accel.z);
+		lv_textarea_set_text(guider_ui.screen_setting_ta_acceleration, buffer);
+
+		// 3. 格式化并赋值陀螺仪数据到文本区域
+		snprintf(buffer, sizeof(buffer), "X:%.2f°  Y:%.2f°  Z:%.2f°", Gyro.x, Gyro.y, Gyro.z);
+		lv_textarea_set_text(guider_ui.screen_setting_ta_angle, buffer);
+
+		// 4. 格式化并赋值时间数据到文本区域
+		snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d",
+				datetime.year, datetime.month, datetime.day,
+				datetime.hour, datetime.minute, datetime.second);
+		lv_textarea_set_text(guider_ui.screen_setting_ta_Rtc, buffer);
+
+		// 5. 格式化并赋值电池电压到文本区域
+		snprintf(buffer, sizeof(buffer), "%.2fV", BAT_analogVolts);
+		lv_textarea_set_text(guider_ui.screen_setting_ta_Voltage, buffer);
+
+		// 5. 板子info
+		lv_textarea_set_text(guider_ui.screen_setting_ta_BoardInfo, "ESP32-S3N8R16");
+	}
 	if(current_screen == SCREEN_BILIBILI)
 	{
 		if(g_GetBiliBili_Info_Flag == 1)
@@ -90,11 +126,8 @@ void screen_systerm_timer(lv_timer_t *timer)
 	{
 		uint8_t m_hours = 0;
 		// 更新时间
-		sync_systime_to_mytime();
-		    // 打印时间信息
-   		printf("SCREEN_2 SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
-           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
-           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
+		// sync_systime_to_mytime();
+		// 打印时间信息
 		if(g_my_lvgl_hours >= 12)
 		{
 			m_hours = g_my_lvgl_hours - 12;
@@ -116,10 +149,7 @@ void screen_systerm_timer(lv_timer_t *timer)
 	}
 	else if(current_screen == SCREEN_3)
 	{
-		sync_systime_to_mytime();
-		printf("SCREEN_3 SYNC TIME 年:%4d, 月:%2d, 日:%2d, 小时: %02d, 分钟: %02d, 秒: %02d, 星期: %s\r\n",
-           g_my_lvgl_year, g_my_lvgl_month, g_my_lvgl_day,
-           g_my_lvgl_hours, g_my_lvgl_minutes, g_my_lvgl_seconds, weekday_str);
+		// sync_systime_to_mytime();
 		/*明天和后天的日期显示*/
 		static char temp_buf[50] = {0};
         strncpy(temp_buf, daily_weather[1].date + 5, 5);
@@ -348,59 +378,60 @@ void setup_scr_screen_systerm(lv_ui *ui){
 	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_bili, LV_IMGBTN_STATE_RELEASED, NULL, &_app_bilibili_alpha_80x50, NULL);
 	lv_obj_add_flag(ui->screen_systerm_imgbtn_bili, LV_OBJ_FLAG_CHECKABLE);
 
-	//Write codes screen_systerm_imgbtn_sd
-	ui->screen_systerm_imgbtn_sd = lv_imgbtn_create(ui->screen_systerm);
-	lv_obj_set_pos(ui->screen_systerm_imgbtn_sd, 0, 90);
-	lv_obj_set_size(ui->screen_systerm_imgbtn_sd, 80, 50);
-	lv_obj_set_scrollbar_mode(ui->screen_systerm_imgbtn_sd, LV_SCROLLBAR_MODE_OFF);
+	//Write codes screen_systerm_imgbtn_setting
+	ui->screen_systerm_imgbtn_setting = lv_imgbtn_create(ui->screen_systerm);
+	lv_obj_set_pos(ui->screen_systerm_imgbtn_setting, 0, 90);
+	lv_obj_set_size(ui->screen_systerm_imgbtn_setting, 80, 50);
+	lv_obj_set_scrollbar_mode(ui->screen_systerm_imgbtn_setting, LV_SCROLLBAR_MODE_OFF);
 
-	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_imgbtn_sd_main_main_default
-	static lv_style_t style_screen_systerm_imgbtn_sd_main_main_default;
-	if (style_screen_systerm_imgbtn_sd_main_main_default.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_sd_main_main_default);
+	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_imgbtn_setting_main_main_default
+	static lv_style_t style_screen_systerm_imgbtn_setting_main_main_default;
+	if (style_screen_systerm_imgbtn_setting_main_main_default.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_setting_main_main_default);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_sd_main_main_default);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_sd_main_main_default, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_sd_main_main_default, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_sd_main_main_default, lv_color_make(0xff, 0xff, 0xff));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_sd_main_main_default, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_sd_main_main_default, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_sd, &style_screen_systerm_imgbtn_sd_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+		lv_style_init(&style_screen_systerm_imgbtn_setting_main_main_default);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_setting_main_main_default, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_setting_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_setting_main_main_default, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_setting_main_main_default, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_setting_main_main_default, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_setting, &style_screen_systerm_imgbtn_setting_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-	//Write style state: LV_STATE_PRESSED for style_screen_systerm_imgbtn_sd_main_main_pressed
-	static lv_style_t style_screen_systerm_imgbtn_sd_main_main_pressed;
-	if (style_screen_systerm_imgbtn_sd_main_main_pressed.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_sd_main_main_pressed);
+	//Write style state: LV_STATE_PRESSED for style_screen_systerm_imgbtn_setting_main_main_pressed
+	static lv_style_t style_screen_systerm_imgbtn_setting_main_main_pressed;
+	if (style_screen_systerm_imgbtn_setting_main_main_pressed.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_setting_main_main_pressed);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_sd_main_main_pressed);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_sd_main_main_pressed, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_sd_main_main_pressed, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_sd_main_main_pressed, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_sd_main_main_pressed, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_sd_main_main_pressed, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_sd, &style_screen_systerm_imgbtn_sd_main_main_pressed, LV_PART_MAIN|LV_STATE_PRESSED);
+		lv_style_init(&style_screen_systerm_imgbtn_setting_main_main_pressed);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_setting_main_main_pressed, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_setting_main_main_pressed, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_setting_main_main_pressed, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_setting_main_main_pressed, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_setting_main_main_pressed, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_setting, &style_screen_systerm_imgbtn_setting_main_main_pressed, LV_PART_MAIN|LV_STATE_PRESSED);
 
-	//Write style state: LV_STATE_CHECKED for style_screen_systerm_imgbtn_sd_main_main_checked
-	static lv_style_t style_screen_systerm_imgbtn_sd_main_main_checked;
-	if (style_screen_systerm_imgbtn_sd_main_main_checked.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_sd_main_main_checked);
+	//Write style state: LV_STATE_CHECKED for style_screen_systerm_imgbtn_setting_main_main_checked
+	static lv_style_t style_screen_systerm_imgbtn_setting_main_main_checked;
+	if (style_screen_systerm_imgbtn_setting_main_main_checked.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_setting_main_main_checked);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_sd_main_main_checked);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_sd_main_main_checked, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_sd_main_main_checked, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_sd_main_main_checked, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_sd_main_main_checked, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_sd_main_main_checked, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_sd, &style_screen_systerm_imgbtn_sd_main_main_checked, LV_PART_MAIN|LV_STATE_CHECKED);
-	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_sd, LV_IMGBTN_STATE_RELEASED, NULL, &_app_file_manager_alpha_80x50, NULL);
-	lv_obj_add_flag(ui->screen_systerm_imgbtn_sd, LV_OBJ_FLAG_CHECKABLE);
+		lv_style_init(&style_screen_systerm_imgbtn_setting_main_main_checked);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_setting_main_main_checked, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_setting_main_main_checked, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_setting_main_main_checked, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_setting_main_main_checked, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_setting_main_main_checked, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_setting, &style_screen_systerm_imgbtn_setting_main_main_checked, LV_PART_MAIN|LV_STATE_CHECKED);
+	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_setting, LV_IMGBTN_STATE_RELEASED, NULL, &_setting_alpha_80x50, NULL);
+	lv_obj_add_flag(ui->screen_systerm_imgbtn_setting, LV_OBJ_FLAG_CHECKABLE);
+
 
 	//Write codes screen_systerm_label_4
 	ui->screen_systerm_label_4 = lv_label_create(ui->screen_systerm);
 	lv_obj_set_pos(ui->screen_systerm_label_4, 15, 145);
-	lv_obj_set_size(ui->screen_systerm_label_4, 50, 20);
+	lv_obj_set_size(ui->screen_systerm_label_4, 80, 20);
 	lv_obj_set_scrollbar_mode(ui->screen_systerm_label_4, LV_SCROLLBAR_MODE_OFF);
-	lv_label_set_text(ui->screen_systerm_label_4, "SD");
+	lv_label_set_text(ui->screen_systerm_label_4, "Setting");
 	lv_label_set_long_mode(ui->screen_systerm_label_4, LV_LABEL_LONG_WRAP);
 
 	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_label_4_main_main_default
@@ -418,7 +449,7 @@ void setup_scr_screen_systerm(lv_ui *ui){
 	lv_style_set_text_font(&style_screen_systerm_label_4_main_main_default, &lv_font_Acme_Regular_20);
 	lv_style_set_text_letter_space(&style_screen_systerm_label_4_main_main_default, 1);
 	lv_style_set_text_line_space(&style_screen_systerm_label_4_main_main_default, 0);
-	lv_style_set_text_align(&style_screen_systerm_label_4_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_text_align(&style_screen_systerm_label_4_main_main_default, LV_TEXT_ALIGN_LEFT);
 	lv_style_set_pad_left(&style_screen_systerm_label_4_main_main_default, 0);
 	lv_style_set_pad_right(&style_screen_systerm_label_4_main_main_default, 0);
 	lv_style_set_pad_top(&style_screen_systerm_label_4_main_main_default, 0);
@@ -626,52 +657,52 @@ void setup_scr_screen_systerm(lv_ui *ui){
 	lv_style_set_pad_bottom(&style_screen_systerm_label_1_main_main_default, 0);
 	lv_obj_add_style(ui->screen_systerm_label_1, &style_screen_systerm_label_1_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-	//Write codes screen_systerm_imgbtn_2050
-	ui->screen_systerm_imgbtn_2050 = lv_imgbtn_create(ui->screen_systerm);
-	lv_obj_set_pos(ui->screen_systerm_imgbtn_2050, 110, 165);
-	lv_obj_set_size(ui->screen_systerm_imgbtn_2050, 80, 50);
-	lv_obj_set_scrollbar_mode(ui->screen_systerm_imgbtn_2050, LV_SCROLLBAR_MODE_OFF);
+	//Write codes screen_systerm_imgbtn_Pic
+	ui->screen_systerm_imgbtn_Pic = lv_imgbtn_create(ui->screen_systerm);
+	lv_obj_set_pos(ui->screen_systerm_imgbtn_Pic, 110, 170);
+	lv_obj_set_size(ui->screen_systerm_imgbtn_Pic, 80, 50);
+	lv_obj_set_scrollbar_mode(ui->screen_systerm_imgbtn_Pic, LV_SCROLLBAR_MODE_OFF);
 
-	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_imgbtn_2050_main_main_default
-	static lv_style_t style_screen_systerm_imgbtn_2050_main_main_default;
-	if (style_screen_systerm_imgbtn_2050_main_main_default.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_2050_main_main_default);
+	//Write style state: LV_STATE_DEFAULT for style_screen_systerm_imgbtn_pic_main_main_default
+	static lv_style_t style_screen_systerm_imgbtn_pic_main_main_default;
+	if (style_screen_systerm_imgbtn_pic_main_main_default.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_pic_main_main_default);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_2050_main_main_default);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_2050_main_main_default, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_2050_main_main_default, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2050_main_main_default, lv_color_make(0xff, 0xff, 0xff));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2050_main_main_default, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2050_main_main_default, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_2050, &style_screen_systerm_imgbtn_2050_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
+		lv_style_init(&style_screen_systerm_imgbtn_pic_main_main_default);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_pic_main_main_default, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_pic_main_main_default, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_pic_main_main_default, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_pic_main_main_default, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_pic_main_main_default, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_Pic, &style_screen_systerm_imgbtn_pic_main_main_default, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-	//Write style state: LV_STATE_PRESSED for style_screen_systerm_imgbtn_2050_main_main_pressed
-	static lv_style_t style_screen_systerm_imgbtn_2050_main_main_pressed;
-	if (style_screen_systerm_imgbtn_2050_main_main_pressed.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_2050_main_main_pressed);
+	//Write style state: LV_STATE_PRESSED for style_screen_systerm_imgbtn_pic_main_main_pressed
+	static lv_style_t style_screen_systerm_imgbtn_pic_main_main_pressed;
+	if (style_screen_systerm_imgbtn_pic_main_main_pressed.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_pic_main_main_pressed);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_2050_main_main_pressed);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_2050_main_main_pressed, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_2050_main_main_pressed, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2050_main_main_pressed, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2050_main_main_pressed, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2050_main_main_pressed, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_2050, &style_screen_systerm_imgbtn_2050_main_main_pressed, LV_PART_MAIN|LV_STATE_PRESSED);
+		lv_style_init(&style_screen_systerm_imgbtn_pic_main_main_pressed);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_pic_main_main_pressed, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_pic_main_main_pressed, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_pic_main_main_pressed, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_pic_main_main_pressed, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_pic_main_main_pressed, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_Pic, &style_screen_systerm_imgbtn_pic_main_main_pressed, LV_PART_MAIN|LV_STATE_PRESSED);
 
-	//Write style state: LV_STATE_CHECKED for style_screen_systerm_imgbtn_2050_main_main_checked
-	static lv_style_t style_screen_systerm_imgbtn_2050_main_main_checked;
-	if (style_screen_systerm_imgbtn_2050_main_main_checked.prop_cnt > 1)
-		lv_style_reset(&style_screen_systerm_imgbtn_2050_main_main_checked);
+	//Write style state: LV_STATE_CHECKED for style_screen_systerm_imgbtn_pic_main_main_checked
+	static lv_style_t style_screen_systerm_imgbtn_pic_main_main_checked;
+	if (style_screen_systerm_imgbtn_pic_main_main_checked.prop_cnt > 1)
+		lv_style_reset(&style_screen_systerm_imgbtn_pic_main_main_checked);
 	else
-		lv_style_init(&style_screen_systerm_imgbtn_2050_main_main_checked);
-	lv_style_set_text_color(&style_screen_systerm_imgbtn_2050_main_main_checked, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_align(&style_screen_systerm_imgbtn_2050_main_main_checked, LV_TEXT_ALIGN_CENTER);
-	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_2050_main_main_checked, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_2050_main_main_checked, 0);
-	lv_style_set_img_opa(&style_screen_systerm_imgbtn_2050_main_main_checked, 255);
-	lv_obj_add_style(ui->screen_systerm_imgbtn_2050, &style_screen_systerm_imgbtn_2050_main_main_checked, LV_PART_MAIN|LV_STATE_CHECKED);
-	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_2050, LV_IMGBTN_STATE_RELEASED, NULL, &_app_picture_alpha_80x50, NULL);
-	lv_obj_add_flag(ui->screen_systerm_imgbtn_2050, LV_OBJ_FLAG_CHECKABLE);
+		lv_style_init(&style_screen_systerm_imgbtn_pic_main_main_checked);
+	lv_style_set_text_color(&style_screen_systerm_imgbtn_pic_main_main_checked, lv_color_make(0xFF, 0x33, 0xFF));
+	lv_style_set_text_align(&style_screen_systerm_imgbtn_pic_main_main_checked, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_img_recolor(&style_screen_systerm_imgbtn_pic_main_main_checked, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_img_recolor_opa(&style_screen_systerm_imgbtn_pic_main_main_checked, 0);
+	lv_style_set_img_opa(&style_screen_systerm_imgbtn_pic_main_main_checked, 255);
+	lv_obj_add_style(ui->screen_systerm_imgbtn_Pic, &style_screen_systerm_imgbtn_pic_main_main_checked, LV_PART_MAIN|LV_STATE_CHECKED);
+	lv_imgbtn_set_src(ui->screen_systerm_imgbtn_Pic, LV_IMGBTN_STATE_RELEASED, NULL, &_app_picture_alpha_80x50, NULL);
+	lv_obj_add_flag(ui->screen_systerm_imgbtn_Pic, LV_OBJ_FLAG_CHECKABLE);
 
 	//Write codes screen_systerm_label_2
 	ui->screen_systerm_label_2 = lv_label_create(ui->screen_systerm);

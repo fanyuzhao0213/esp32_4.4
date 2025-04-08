@@ -10,7 +10,8 @@ set(src_dirs
             IIC
             QMI8658
             RTC
-            SD)
+            SD
+            ADC)
 
 set(include_dirs
             LED
@@ -24,7 +25,8 @@ set(include_dirs
             IIC
             QMI8658
             RTC
-            SD)
+            SD
+            ADC)
 
 set(requires
             driver
@@ -35,7 +37,8 @@ set(requires
             esp_http_client
             json
             mqtt
-            fatfs)
+            fatfs
+            esp_adc_cal)
 
 idf_component_register(SRC_DIRS ${src_dirs} INCLUDE_DIRS ${include_dirs} REQUIRES ${requires})
 

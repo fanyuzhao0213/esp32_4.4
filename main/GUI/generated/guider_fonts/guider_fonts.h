@@ -19,7 +19,7 @@
     LV_FONT_DECLARE(lv_font_Acme_Regular_10)
     LV_FONT_DECLARE(lv_font_Acme_Regular_20)
     LV_FONT_DECLARE(lv_font_Acme_Regular_14)
-
+    LV_FONT_DECLARE(lv_font_Acme_Regular_12)
     #ifdef __cplusplus
     }
     #endif
