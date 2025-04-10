@@ -11,7 +11,8 @@ set(src_dirs
             QMI8658
             RTC
             SD
-            ADC)
+            ADC
+            PWR_KEY)
 
 set(include_dirs
             LED
@@ -26,7 +27,8 @@ set(include_dirs
             QMI8658
             RTC
             SD
-            ADC)
+            ADC
+            PWR_KEY)
 
 set(requires
             driver

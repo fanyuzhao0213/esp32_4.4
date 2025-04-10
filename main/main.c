@@ -24,6 +24,7 @@
 #include "lv_fs_if/lv_fs_if.h"
 #include "esp_task_wdt.h"
 
+#include "PWR_Key.h"
 #include "pwm.h"
 #include "BAT_Driver.h"
 #include "iic.h"
@@ -421,16 +422,16 @@ void Driver_Loop(void *parameter)
         QMI8658_Loop();
         PCF85063_Loop();
         sync_systime_to_mytime();
-        // PWR_Loop();
+        PWR_Loop();
         BAT_Get_Volts();
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
     vTaskDelete(NULL);
 }
 
 void HardWare_Init(void)
 {
-    // PWR_Init();
+    PWR_Init();
     BAT_Init();
     I2C_Init();
     PCF85063_Init();
