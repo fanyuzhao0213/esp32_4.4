@@ -37,6 +37,16 @@
         "stdio.h": "c",
         "iic.h": "c",
         "bat_driver.h": "c",
-        "pwm.h": "c"
+        "pwm.h": "c",
+        "ble.h": "c",
+        "pcf85063.h": "c",
+        "lv_port_indev.h": "c",
+        "optional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "array": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

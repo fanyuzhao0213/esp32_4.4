@@ -23,7 +23,7 @@
 #include "my_gui.h"
 #include "lv_fs_if/lv_fs_if.h"
 #include "esp_task_wdt.h"
-
+#include "ble.h"
 #include "PWR_Key.h"
 #include "pwm.h"
 #include "BAT_Driver.h"
@@ -31,6 +31,7 @@
 #include "QMI8658.h"
 #include "PCF85063.h"
 #include "SD_MMC.h"
+
 
 // 创建信号量
 SemaphoreHandle_t systerminit_semaphore;
@@ -415,6 +416,7 @@ void my_spiffs_init(void)
 
 static const char *MAINTAG = "MAIN"; // 定义日志标签
 
+
 void Driver_Loop(void *parameter)
 {
     while(1)
@@ -437,15 +439,19 @@ void HardWare_Init(void)
     PCF85063_Init();
     QMI8658_Init();
     Flash_Searching();
+
     xTaskCreatePinnedToCore(Driver_Loop,"Other Driver task",4096,NULL,3,NULL,0);
 }
 void app_main(void)
 {
+    int ret = 0;
     print_chip_info();                  // 打印芯片信息和重启原因
     my_spiffs_init();
-    xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
+    //xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
     HardWare_Init();
+    // xTaskCreatePinnedToCore(my_ble_task, "BLE_Task", 2048, NULL, 4, NULL, 0);
     wifi_init();
+    my_ble_init();
     // xTaskCreatePinnedToCore(Driver_Loop,"Other Driver task", 4096,NULL, 3,NULL,0);
     // xTaskCreatePinnedToCore(QMI8658_Task, "QMI8658_Task", 4096, NULL, 3, NULL, 0);
 }

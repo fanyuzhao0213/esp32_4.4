@@ -12,7 +12,8 @@ set(src_dirs
             RTC
             SD
             ADC
-            PWR_KEY)
+            PWR_KEY
+            BLE)
 
 set(include_dirs
             LED
@@ -28,7 +29,8 @@ set(include_dirs
             RTC
             SD
             ADC
-            PWR_KEY)
+            PWR_KEY
+            BLE)
 
 set(requires
             driver
@@ -40,7 +42,8 @@ set(requires
             json
             mqtt
             fatfs
-            esp_adc_cal)
+            esp_adc_cal
+            bt)
 
 idf_component_register(SRC_DIRS ${src_dirs} INCLUDE_DIRS ${include_dirs} REQUIRES ${requires})
 

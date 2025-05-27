@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "main",
-    "project_version":    "001ee9f-dirty",
+    "project_version":    "e560670-dirty",
     "project_path":       "G:/test_project/esp32_4.4",
     "idf_path":           "F:/esp_idf_4.4.8/v4.4.8/esp-idf",
     "build_dir":          "G:/test_project/esp32_4.4/build",
@@ -33,13 +33,13 @@
             "dir": "G:/test_project/esp32_4.4/components/BSP",
             "type": "LIBRARY",
             "lib": "__idf_BSP",
-            "reqs": [ "driver", "esp_timer", "esp_lcd", "nvs_flash", "esp_wifi", "esp_http_client", "json", "mqtt", "fatfs", "esp_adc_cal" ],
+            "reqs": [ "driver", "esp_timer", "esp_lcd", "nvs_flash", "esp_wifi", "esp_http_client", "json", "mqtt", "fatfs", "esp_adc_cal", "bt" ],
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "G:/test_project/esp32_4.4/build/esp-idf/BSP/libBSP.a",
-            "sources": [ "G:/test_project/esp32_4.4/components/BSP/LED/led.c", "G:/test_project/esp32_4.4/components/BSP/KEY/key.c", "G:/test_project/esp32_4.4/components/BSP/ESPTIM/esptim.c", "G:/test_project/esp32_4.4/components/BSP/PWM/pwm.c", "G:/test_project/esp32_4.4/components/BSP/UART/usart.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/simple_wifi_sta.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/wifi_ap.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/wifi_smartconfig.c", "G:/test_project/esp32_4.4/components/BSP/WEATHER/bilibili.c", "G:/test_project/esp32_4.4/components/BSP/WEATHER/weather.c", "G:/test_project/esp32_4.4/components/BSP/MQTT/mqtt.c", "G:/test_project/esp32_4.4/components/BSP/IIC/iic.c", "G:/test_project/esp32_4.4/components/BSP/QMI8658/QMI8658.c", "G:/test_project/esp32_4.4/components/BSP/RTC/PCF85063.c", "G:/test_project/esp32_4.4/components/BSP/SD/SD_MMC.c", "G:/test_project/esp32_4.4/components/BSP/ADC/BAT_Driver.c", "G:/test_project/esp32_4.4/components/BSP/PWR_KEY/PWR_Key.c" ],
-            "include_dirs": [ "LED", "KEY", "ESPTIM", "PWM", "UART", "WIFI", "WEATHER", "MQTT", "IIC", "QMI8658", "RTC", "SD", "ADC", "PWR_KEY" ]
+            "sources": [ "G:/test_project/esp32_4.4/components/BSP/LED/led.c", "G:/test_project/esp32_4.4/components/BSP/KEY/key.c", "G:/test_project/esp32_4.4/components/BSP/ESPTIM/esptim.c", "G:/test_project/esp32_4.4/components/BSP/PWM/pwm.c", "G:/test_project/esp32_4.4/components/BSP/UART/usart.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/simple_wifi_sta.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/wifi_ap.c", "G:/test_project/esp32_4.4/components/BSP/WIFI/wifi_smartconfig.c", "G:/test_project/esp32_4.4/components/BSP/WEATHER/bilibili.c", "G:/test_project/esp32_4.4/components/BSP/WEATHER/weather.c", "G:/test_project/esp32_4.4/components/BSP/MQTT/mqtt.c", "G:/test_project/esp32_4.4/components/BSP/IIC/iic.c", "G:/test_project/esp32_4.4/components/BSP/QMI8658/QMI8658.c", "G:/test_project/esp32_4.4/components/BSP/RTC/PCF85063.c", "G:/test_project/esp32_4.4/components/BSP/SD/SD_MMC.c", "G:/test_project/esp32_4.4/components/BSP/ADC/BAT_Driver.c", "G:/test_project/esp32_4.4/components/BSP/PWR_KEY/PWR_Key.c", "G:/test_project/esp32_4.4/components/BSP/BLE/ble.c" ],
+            "include_dirs": [ "LED", "KEY", "ESPTIM", "PWM", "UART", "WIFI", "WEATHER", "MQTT", "IIC", "QMI8658", "RTC", "SD", "ADC", "PWR_KEY", "BLE" ]
         },
         "app_trace": {
             "alias": "idf::app_trace",

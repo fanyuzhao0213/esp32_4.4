@@ -219,20 +219,19 @@ void obtain_time(void)
 
     initialize_sntp();
     // 等待时间同步
-    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
-    {
-        ESP_LOGI(TAG, "Waiting for system time to be set...");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        timeout_count++;
-        if(timeout_count >=10)
-        {
-            xSemaphoreGive(systerminit_semaphore);
-            ESP_LOGI(TAG, "信号量释放成功");
-            timeout_count=0;
-            return;
-        }
-
-    }
+    // while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
+    // {
+    //     ESP_LOGI(TAG, "Waiting for system time to be set...");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //     timeout_count++;
+    //     if(timeout_count >=10)
+    //     {
+    //         xSemaphoreGive(systerminit_semaphore);
+    //         ESP_LOGI(TAG, "信号量释放成功");
+    //         timeout_count=0;
+    //         return;
+    //     }
+    // }
     xSemaphoreGive(systerminit_semaphore);
     ESP_LOGI(TAG, "信号量释放成功");
     // 获取当前时间
