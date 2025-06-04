@@ -1,6 +1,10 @@
 #include "ble.h"
 
 static const char *TAG = "BLE_BLUEDROID";
+uint8_t TARGET_MAC[6] = {0xEC, 0x43, 0x77, 0xE8, 0xA3, 0x1B}; // 设置要连接的实际目标MAC
+char TARGET_NAME[] = "Washer-Aqua-Mu";// 设置要连接的设备名称
+
+
 
 void my_ble_init(void)
 {
@@ -35,8 +39,9 @@ void my_ble_init(void)
         return;
     }
 
-    my_server_init();
-
+    my_server_init();       //服务端初始化 类似于从机，广播被手机连
+    my_client_init();       //客户端初始化 类似于主机，主动扫描
+    #if 0
     // 启动扫描
     esp_ble_scan_params_t scan_params = {
         .scan_type = BLE_SCAN_TYPE_ACTIVE,
@@ -57,5 +62,6 @@ void my_ble_init(void)
     #endif
     // esp_ble_gap_update_whitelist(true, TARGET_MAC,BLE_WL_ADDR_TYPE_PUBLIC);
     esp_ble_gap_start_scanning(0); // 0表示持续扫描
+    #endif
 }
 

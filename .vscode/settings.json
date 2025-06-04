@@ -47,6 +47,7 @@
         "array": "c",
         "tuple": "c",
         "type_traits": "c",
-        "utility": "c"
+        "utility": "c",
+        "sdkconfig.h": "c"
     }
 }

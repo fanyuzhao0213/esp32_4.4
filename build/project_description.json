@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "main",
-    "project_version":    "42f63db-dirty",
+    "project_version":    "e7316e5-dirty",
     "project_path":       "G:/test_project/esp32_4.4",
     "idf_path":           "F:/esp_idf_4.4.8/v4.4.8/esp-idf",
     "build_dir":          "G:/test_project/esp32_4.4/build",
