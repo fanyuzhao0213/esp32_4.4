@@ -48,6 +48,8 @@
         "tuple": "c",
         "type_traits": "c",
         "utility": "c",
-        "sdkconfig.h": "c"
+        "sdkconfig.h": "c",
+        "string": "c",
+        "string_view": "c"
     }
 }

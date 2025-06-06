@@ -45,7 +45,7 @@ static uint16_t conn_id = 0;
 static esp_gatt_if_t gattc_if_value = 0;
 
 // 扫描参数
-static esp_ble_scan_params_t ble_scan_params = {
+esp_ble_scan_params_t ble_scan_params = {
     .scan_type              = BLE_SCAN_TYPE_ACTIVE,
     .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
     .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
@@ -59,7 +59,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
         // 扫描参数设置完成，开始扫描
-        esp_ble_gap_start_scanning(30); // 扫描30秒
+        // esp_ble_gap_start_scanning(30); // 扫描30秒
         break;
 
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
@@ -133,7 +133,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         if (param->reg.status == ESP_GATT_OK) {
             gattc_if_value = gattc_if;
             ESP_LOGI(TAG, "注册成功，设置扫描参数");
-            esp_ble_gap_set_scan_params(&ble_scan_params);
+            // esp_ble_gap_set_scan_params(&ble_scan_params);
         } else {
             ESP_LOGE(TAG, "注册应用失败, 状态 %d", param->reg.status);
         }
@@ -319,7 +319,6 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         if (param->write.handle  == rx_char_handle + 1) {
             // 添加小延迟确保通知已启用
             vTaskDelay(pdMS_TO_TICKS(100));
-
             // 现在发送数据
             uint8_t write_data[] = {
                 0xAA, 0xAA, 0x25, 0xB1, 0x46, 0x46, 0x46, 0x46, 0x46, 0x46,
@@ -370,7 +369,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         char_handle = 0;
 
         // 重新开始扫描
-        esp_ble_gap_set_scan_params(&ble_scan_params);
+        // esp_ble_gap_set_scan_params(&ble_scan_params);
         break;
 
     default:

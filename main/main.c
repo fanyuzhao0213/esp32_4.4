@@ -31,6 +31,7 @@
 #include "QMI8658.h"
 #include "PCF85063.h"
 #include "SD_MMC.h"
+#include "usart.h"
 
 
 // 创建信号量
@@ -449,6 +450,7 @@ void app_main(void)
     my_spiffs_init();
     //xTaskCreatePinnedToCore(lvgl_task, "LVGL_Task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 0);
     HardWare_Init();
+    usart_init();
     // xTaskCreatePinnedToCore(my_ble_task, "BLE_Task", 2048, NULL, 4, NULL, 0);
     wifi_init();
     my_ble_init();

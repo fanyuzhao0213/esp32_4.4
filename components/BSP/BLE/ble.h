@@ -31,6 +31,8 @@ extern char TARGET_NAME[];// 设置要连接的设备名称
 
 #define BLE_MTU_SEND_SIZE     20
 
+extern esp_ble_scan_params_t ble_scan_params;
+
 void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 // 初始化BLE
 void my_ble_init(void);
