@@ -37,9 +37,6 @@ static bool write_pending = false;
 static uint16_t service_start_handle = 0;
 static uint16_t service_end_handle = 0;
 static uint16_t char_handle = 0;
-// 全局变量
-static uint16_t rx_char_handle = 0;  // 用于接收通知
-static uint16_t tx_char_handle = 0;  // 用于发送数据
 static esp_bd_addr_t remote_bda = {0};
 static uint16_t conn_id = 0;
 static esp_gatt_if_t gattc_if_value = 0;
@@ -59,7 +56,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
         // 扫描参数设置完成，开始扫描
-        // esp_ble_gap_start_scanning(30); // 扫描30秒
+        //esp_ble_gap_start_scanning(30); // 扫描30秒
         break;
 
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
@@ -133,7 +130,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         if (param->reg.status == ESP_GATT_OK) {
             gattc_if_value = gattc_if;
             ESP_LOGI(TAG, "注册成功，设置扫描参数");
-            // esp_ble_gap_set_scan_params(&ble_scan_params);
+            esp_ble_gap_set_scan_params(&ble_scan_params);
         } else {
             ESP_LOGE(TAG, "注册应用失败, 状态 %d", param->reg.status);
         }
@@ -184,10 +181,8 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
             break;
         }
 
-        if (service_start_handle != 0 && service_end_handle != 0)
-        {
+        if (service_start_handle != 0 && service_end_handle != 0) {
             ESP_LOGI(TAG, "开始查找特征");
-
             // 获取特征数量
             uint16_t count = 0;
             esp_gatt_status_t status = esp_ble_gattc_get_attr_count(gattc_if, conn_id,
@@ -195,97 +190,66 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
                                                                   service_start_handle,
                                                                   service_end_handle,
                                                                   0, &count);
-
             if (status != ESP_GATT_OK) {
                 ESP_LOGE(TAG, "获取特征数量失败, 状态 %d", status);
                 break;
             }
-
-            if (count > 0)
-            {
+            if (count > 0) {
                 // 分配内存存储特征
                 esp_gattc_char_elem_t *char_elem_result = (esp_gattc_char_elem_t *)malloc(
                                                         sizeof(esp_gattc_char_elem_t) * count);
-
                 if (!char_elem_result) {
                     ESP_LOGE(TAG, "内存分配失败");
                     break;
                 }
-                // 获取RX特征 (写特征)
-                esp_bt_uuid_t rx_char_uuid = {
+                // 查找目标特征
+                esp_bt_uuid_t char_uuid = {
                     .len = ESP_UUID_LEN_128,
-                    .uuid = {.uuid128 = {
-                        0x9E,0xCA,0xDC,0x24,0x0E,0xE5,0xA9,0xE0,
-                        0x93,0xF3,0xA3,0xB5,0x02,0x00,0x40,0x6E
-                    }},
+                    .uuid = {
+                        .uuid128 = {0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0, 0x93, 0xF3, 0xA3, 0xB5, 0x02, 0x00, 0x40, 0x6E},
+                    },
                 };
                 status = esp_ble_gattc_get_char_by_uuid(gattc_if, conn_id,
-                                                    service_start_handle, service_end_handle,
-                                                    rx_char_uuid, char_elem_result, &count);
-                if (status == ESP_GATT_OK && count > 0) {
-                    tx_char_handle = char_elem_result[0].char_handle;
-                    ESP_LOGI(TAG, "找到TX特征, handle = %d", tx_char_handle);
+                                                      service_start_handle, service_end_handle,
+                                                      char_uuid, char_elem_result, &count);
+                if (status != ESP_GATT_OK) {
+                    ESP_LOGE(TAG, "获取特征失败, 状态 %d", status);
+                    free(char_elem_result);
+                    break;
                 }
+                if (count > 0) {
+                    // 找到目标特征
+                    char_handle = char_elem_result[0].char_handle;
+                    ESP_LOGI(TAG, "找到目标特征, handle = %d", char_handle);
 
-                // 获取TX特征 (通知特征)
-                esp_bt_uuid_t tx_char_uuid = {
-                    .len = ESP_UUID_LEN_128,
-                    .uuid = {.uuid128 = {
-                        0x9E,0xCA,0xDC,0x24,0x0E,0xE5,0xA9,0xE0,
-                        0x93,0xF3,0xA3,0xB5,0x03,0x00,0x40,0x6E
-                    }},
-                };
-                status = esp_ble_gattc_get_char_by_uuid(gattc_if, conn_id,
-                                                    service_start_handle, service_end_handle,
-                                                    tx_char_uuid, char_elem_result, &count);
-                if (status == ESP_GATT_OK && count > 0)
-                {
-                    rx_char_handle = char_elem_result[0].char_handle;
-
-                    // 添加属性检查
-                    uint8_t properties = char_elem_result[0].properties;
-                    ESP_LOGI(TAG, "找到rx特征, handle = %d, 属性: 0x%02X", rx_char_handle, properties);
-
-                    if (properties & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
-                    {
-                        ESP_LOGI(TAG, "特征支持通知");
-                        // 注册通知
-                        esp_ble_gattc_register_for_notify(gattc_if_value, remote_bda, rx_char_handle);
-                        // // 写入CCCD启用通知
-                        // uint16_t ccc_value = 0x0001;
-                        // esp_ble_gattc_write_char_descr(
-                        //     gattc_if,
-                        //     conn_id,
-                        //     rx_char_handle+1,
-                        //     sizeof(ccc_value),
-                        //     (uint8_t*)&ccc_value,
-                        //     ESP_GATT_WRITE_TYPE_RSP,
-                        //     ESP_GATT_AUTH_REQ_NONE);
-                        esp_gatt_status_t ret = esp_ble_gattc_get_attr_count(gattc_if, conn_id, ESP_GATT_DB_DESCRIPTOR,
-                            service_start_handle, service_end_handle, rx_char_handle, &count);
-                        if (ret == ESP_GATT_OK && count > 0) {
-                            esp_gattc_descr_elem_t *descr_elem_result = malloc(sizeof(esp_gattc_descr_elem_t) * count);
-                            if (descr_elem_result) {
-                                ret = esp_ble_gattc_get_all_descr(gattc_if, conn_id, rx_char_handle, descr_elem_result, &count, 0);
-                                if (ret == ESP_GATT_OK) {
-                                    for (int i = 0; i < count; ++i) {
-                                        if (descr_elem_result[i].uuid.len == ESP_UUID_LEN_16 &&
-                                            descr_elem_result[i].uuid.uuid.uuid16 == ESP_GATT_UUID_CHAR_CLIENT_CONFIG) {
-                                            uint16_t notify_en = 1;
-                                            esp_ble_gattc_write_char_descr(gattc_if, conn_id, descr_elem_result[i].handle,
-                                                sizeof(notify_en), (uint8_t *)&notify_en, ESP_GATT_WRITE_TYPE_RSP, ESP_GATT_AUTH_REQ_NONE);
-                                            break;
-                                        }
-                                    }
-                                }
-                                free(descr_elem_result);
-                            }
-                        }
+                    // 添加CCCD配置
+                    uint16_t ccc_handle = char_handle + 1; // 假设描述符紧接特征
+                    uint16_t enable_notify = 0x0001;
+                    esp_err_t err = esp_ble_gattc_write_char_descr(
+                        gattc_if,
+                        conn_id,
+                        ccc_handle,
+                        sizeof(enable_notify),
+                        (uint8_t*)&enable_notify,
+                        ESP_GATT_WRITE_TYPE_RSP,
+                        ESP_GATT_AUTH_REQ_NONE
+                    );
+                    if (err != ESP_OK) {
+                        ESP_LOGE(TAG, "CCCD配置失败: %s", esp_err_to_name(err));
                     }
-                }
-                else {
+                    #if 1
+                    uint8_t write_data[] = {
+                        0xAA, 0xAA, 0x25, 0xB1, 0x46, 0x46, 0x46, 0x46, 0x46, 0x46,
+                        0x44, 0x45, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x38,
+                        0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x31, 0x32,
+                        0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x50
+                    };
+                    my_ble_c_send_data(write_data,sizeof(write_data));
+                    #endif
+                } else {
                     ESP_LOGE(TAG, "未找到目标特征");
                 }
+                free(char_elem_result);
             } else {
                 ESP_LOGE(TAG, "服务中没有特征");
             }
@@ -299,14 +263,84 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
             ESP_LOGE(TAG, "注册通知失败, 状态 %d", param->reg_for_notify.status);
             break;
         }
-        ESP_LOGI(TAG, "注册通知成功, 状态 %d", param->reg_for_notify.status);
+        // 启用通知
+        uint8_t ccc_value[2] = {0x01, 0x00}; // 小端格式: 0x0001
+        esp_ble_gattc_write_char_descr(
+            gattc_if,
+            conn_id,
+            param->reg_for_notify.handle + 1, // CCCD 描述符
+            sizeof(ccc_value),
+            ccc_value,
+            ESP_GATT_WRITE_TYPE_RSP,
+            ESP_GATT_AUTH_REQ_NONE
+        );
+        // 获取描述符数量
+        uint16_t desc_count = 0;
+        esp_gatt_status_t ret_status = esp_ble_gattc_get_attr_count(gattc_if, conn_id,
+                                                                 ESP_GATT_DB_DESCRIPTOR,
+                                                                 service_start_handle,
+                                                                 service_end_handle,
+                                                                 char_handle, &desc_count);
 
+        if (ret_status != ESP_GATT_OK) {
+            ESP_LOGE(TAG, "获取描述符数量失败, 状态 %d", ret_status);
+            break;
+        }
+        if (desc_count > 0) {
+            // 分配内存存储描述符
+            esp_gattc_descr_elem_t *descr_elem_result = (esp_gattc_descr_elem_t *)malloc(
+                                                      sizeof(esp_gattc_descr_elem_t) * desc_count);
+
+            if (!descr_elem_result) {
+                ESP_LOGE(TAG, "内存分配失败");
+                break;
+            }
+            // 查找客户端特征配置描述符
+            esp_bt_uuid_t notify_descr_uuid = {
+                .len = ESP_UUID_LEN_16,
+                .uuid = {
+                    .uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG,
+                },
+            };
+            ret_status = esp_ble_gattc_get_descr_by_char_handle(gattc_if, conn_id,
+                                                              char_handle,
+                                                              notify_descr_uuid,
+                                                              descr_elem_result, &desc_count);
+
+            if (ret_status != ESP_GATT_OK) {
+                ESP_LOGE(TAG, "获取描述符失败, 状态 %d", ret_status);
+                free(descr_elem_result);
+                break;
+            }
+            if (desc_count > 0) {
+                // 使能通知
+                uint16_t notify_en = 1;
+                ret_status = esp_ble_gattc_write_char_descr(gattc_if, conn_id,
+                                                         descr_elem_result[0].handle,
+                                                         sizeof(notify_en),
+                                                         (uint8_t *)&notify_en,
+                                                         ESP_GATT_WRITE_TYPE_RSP,
+                                                         ESP_GATT_AUTH_REQ_NONE);
+
+                if (ret_status != ESP_GATT_OK) {
+                    ESP_LOGE(TAG, "写入描述符失败, 状态 %d", ret_status);
+                }
+            }
+            free(descr_elem_result);
+        }
         break;
 
     case ESP_GATTC_NOTIFY_EVT:
         // 接收到通知数据
-        ESP_LOGI(TAG, "接收到通知数据, 长度: %d", param->notify.value_len);
-        esp_log_buffer_hex(TAG, param->notify.value, param->notify.value_len);
+        ESP_LOGI(TAG, "收到数据 (长度 %d):", param->notify.value_len);
+        // 打印HEX格式
+        for (int i = 0; i < param->notify.value_len; i++) {
+            printf("%02X ", param->notify.value[i]);
+            if ((i+1) % 16 == 0) printf("\n");
+        }
+        printf("\n");
+        // 打印ASCII格式
+        ESP_LOG_BUFFER_HEX_LEVEL(TAG, param->notify.value, param->notify.value_len, ESP_LOG_INFO);
         break;
 
     case ESP_GATTC_WRITE_DESCR_EVT:
@@ -314,20 +348,15 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
             ESP_LOGE(TAG, "写入描述符失败, 状态 %d", param->write.status);
             break;
         }
-        ESP_LOGI(TAG, "写入描述符成功");
-        // 检查是否是CCCD描述符
-        if (param->write.handle  == rx_char_handle + 1) {
-            // 添加小延迟确保通知已启用
-            vTaskDelay(pdMS_TO_TICKS(100));
-            // 现在发送数据
-            uint8_t write_data[] = {
-                0xAA, 0xAA, 0x25, 0xB1, 0x46, 0x46, 0x46, 0x46, 0x46, 0x46,
-                0x44, 0x45, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x38,
-                0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x31, 0x32,
-                0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x50
-            };
-            my_ble_c_send_data(write_data, sizeof(write_data));
-        }
+
+        ESP_LOGI(TAG, "写入描述符成功，现在发送数据到特征");
+
+        // // 写入数据到特征
+        // uint8_t write_data[4] = {0x11, 0x22, 0x33, 0x44};
+        // esp_ble_gattc_write_char(gattc_if, conn_id, char_handle,
+        //                         sizeof(write_data), write_data,
+        //                         ESP_GATT_WRITE_TYPE_RSP,
+        //                         ESP_GATT_AUTH_REQ_NONE);
         break;
 
     case ESP_GATTC_WRITE_CHAR_EVT:
@@ -369,7 +398,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         char_handle = 0;
 
         // 重新开始扫描
-        // esp_ble_gap_set_scan_params(&ble_scan_params);
+        esp_ble_gap_set_scan_params(&ble_scan_params);
         break;
 
     default:
@@ -424,7 +453,7 @@ void my_ble_c_send_data(uint8_t* data, uint16_t len)
         esp_err_t ret = esp_ble_gattc_write_char(
             gattc_if_value,
             conn_id,
-            tx_char_handle,
+            char_handle,
             current_chunk,
             data + offset,
             write_type,

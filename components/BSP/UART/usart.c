@@ -7,6 +7,26 @@ static const char *TAG = "UART";
 static QueueHandle_t uart_queue;
 static uint8_t uart_tx_buf[100] = {0};
 
+//20250617 add 队列和信号量来处理数据
+QueueHandle_t uart_rx_queue = NULL;   //接收数据队列
+SemaphoreHandle_t uart_data_sem;        //数据信号量
+
+QueueHandle_t uart_tx_queue = NULL;     //发送数据队列
+TaskHandle_t uart_tx_task_handle = NULL;
+
+//定义一个数据包结构
+typedef struct
+{
+    uint8_t data[BUF_SIZE];
+    uint16_t data_len;
+}uart_rx_packet_t;
+
+typedef struct {
+    uint8_t *payload;      // 8字节（指针）
+    uint16_t payload_len;  // 2字节
+} uart_tx_packet_t;       // 总共10字节（代替完整数据包）
+
+
 void LOG_HEXDUMP_PRINT(char*str, uint8_t *data, uint16_t len)
 {
     printf("%s\n",str);
@@ -20,8 +40,9 @@ void LOG_HEXDUMP_PRINT(char*str, uint8_t *data, uint16_t len)
 void uart_receive_task(void *arg)
 {
     uint8_t data[BUF_SIZE];
+    uart_rx_packet_t packet;
     TickType_t last_receive_time = 0;  // 记录最后一次接收到数据的时间
-
+    int rev_uart_data_len = 0;
     while (1)
     {
         // 等待 UART 队列中的事件
@@ -33,12 +54,28 @@ void uart_receive_task(void *arg)
             switch (event.type)
             {
                 case UART_DATA:  // 接收到数据
-                    uart_read_bytes(UART_NUM, data, event.size, portMAX_DELAY);
+                    //读取数据
+                    rev_uart_data_len = uart_read_bytes(UART_NUM, data, event.size, portMAX_DELAY);
+                    //填充数据包
+                    packet.data_len = rev_uart_data_len;
+                    memcpy(packet.data,data,rev_uart_data_len);
+
+                    //发送数据到处理队列
+                    if(xQueueSend(uart_rx_queue, &packet, 0) != pdTRUE)
+                    {
+                        ESP_LOGW(TAG, "Data queue full!Dropping packet");
+                    }
+
+                    //触发信号量通知处理任务
+                    xSemaphoreGive(uart_data_sem);
+
+                    #if 0
                     memcpy(&Rev_uart.uart_revbuf[Rev_uart.pr_w], data, event.size);  // 复制数据
                     Rev_uart.pr_w = (Rev_uart.pr_w + event.size) % BUF_SIZE; // 确保索引不越界
                     // LOG_HEXDUMP_PRINT("REV DATA:",&Rev_uart.uart_revbuf[Rev_uart.pr_w],event.size);
                     LOG_HEXDUMP_PRINT("REV DATA:", data, event.size);
                     usart_rev_analysis(data, event.size);
+                    #endif
                     break;
 
                 // UART FIFO 缓冲区溢出事件
@@ -74,6 +111,69 @@ void uart_receive_task(void *arg)
     }
 }
 
+// 新增数据处理任务
+void uart_process_task(void *arg) {
+    uart_rx_packet_t packet;
+
+    while (1) {
+        // 等待信号量（阻塞直到有数据）
+        xSemaphoreTake(uart_data_sem, portMAX_DELAY);
+
+        // 从队列获取数据包
+        while (xQueueReceive(uart_rx_queue, &packet, 0) == pdTRUE) {
+            // 打印原始数据
+            LOG_HEXDUMP_PRINT("REV DATA:", packet.data, packet.data_len);
+            // 数据解析
+            usart_rev_analysis(packet.data, packet.data_len);
+        }
+    }
+}
+
+/**
+ * @brief UART发送任务 - 构建并发送完整数据包
+ */
+static void uart_tx_task(void *arg)
+{
+    while (1) {
+        uart_tx_packet_t tx_packet;
+
+        // 等待发送队列中的消息
+        if (xQueueReceive(uart_tx_queue, &tx_packet, portMAX_DELAY)) {
+            // 计算完整数据包长度
+            const uint16_t packet_len = 6 + tx_packet.payload_len; // 包头2 + 长度2 + 有效载荷 + CRC2
+            uint8_t packet[packet_len];  // 在栈上创建临时数据包
+
+            // 构建数据包
+            packet[0] = PACKET_HEADER;  // 包头1
+            packet[1] = PACKET_HEADER;  // 包头2
+
+            // 长度字段 (整个数据包长度)
+            packet[2] = (packet_len >> 8) & 0xFF;  // 高字节
+            packet[3] = packet_len & 0xFF;         // 低字节
+
+            // 复制有效载荷
+            memcpy(&packet[4], tx_packet.payload, tx_packet.payload_len);
+
+            // 计算CRC (从长度字段开始到有效载荷结束)
+            uint16_t crc = CRC16_CCITT(&packet[4], tx_packet.payload_len);
+
+            // 填充CRC
+            packet[packet_len - 2] = crc & 0xFF;        // CRC低字节
+            packet[packet_len - 1] = (crc >> 8) & 0xFF; // CRC高字节
+
+            // 打印调试信息
+            ESP_LOGI(TAG, "Sending packet: len=%d, payload_len=%d, CRC=0x%04X",
+                     packet_len, tx_packet.payload_len, crc);
+            LOG_HEXDUMP_PRINT("Packet data:", packet, packet_len);
+
+            // 实际发送数据
+            uart_write_bytes(UART_NUM, (const char*)packet, packet_len);
+
+            // 释放有效载荷内存
+            free(tx_packet.payload);
+        }
+    }
+}
 
 void usart_init()
 {
@@ -95,53 +195,67 @@ void usart_init()
     // 安装 UART 驱动程序
     uart_driver_install(UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uart_queue, 0);
 
-    ESP_LOGI(TAG, "UART init finished!");
-    const uint8_t test_data1[] = {0x01, 0x02, 0x03, 0x04};
-    usart_send_packet(test_data1, sizeof(test_data1));
-    // 创建处理 UART 事件的任务
-    xTaskCreate(uart_receive_task, "uart_receive_task", 4096, NULL, 5, NULL);
-    ESP_LOGI(TAG, "uart_receive_task create finished!");
-}
-
-void usart_send_packet(const uint8_t *payload, uint16_t payload_len)
-{
-    // 检查有效载荷长度是否合法
-    if (payload_len > MAX_PAYLOAD_LEN) {
-        ESP_LOGE(TAG, "Payload too large: %d bytes (max %d)", payload_len, MAX_PAYLOAD_LEN);
+    //创建接收数据队列  和 发送数据队列 以及信号量
+    uart_rx_queue = xQueueCreate(10, sizeof(uart_rx_packet_t));
+    uart_tx_queue = xQueueCreate(5, sizeof(uart_tx_packet_t));
+    uart_data_sem = xSemaphoreCreateBinary();
+    // 检查资源创建是否成功
+    if (!uart_rx_queue || !uart_tx_queue || !uart_data_sem) {
+        ESP_LOGE(TAG, "Failed to create queues or semaphore");
         return;
     }
 
-    // 计算整个数据包长度: 包头(2) + 长度字段(2) + 有效载荷 + CRC(2)
-    uint16_t packet_len = 2 + 2 + payload_len + 2;
-    uint8_t  packet[packet_len];
-
-    // 填充包头
-    packet[0] = PACKET_HEADER;
-    packet[1] = PACKET_HEADER;
-
-    // 填充长度字段
-    packet[2] = (packet_len >> 8) & 0xFF;        // 高字节
-    packet[3] = packet_len  & 0xFF; // 高字节
-
-    // 复制有效载荷
-    memcpy(&packet[4], payload, payload_len);
-
-    // 计算CRC (从长度字段开始到有效载荷结束)
-    uint16_t crc = CRC16_CCITT(&packet[4], payload_len);
-
-    // 填充CRC
-    packet[packet_len - 2] = crc & 0xFF;        // CRC低字节
-    packet[packet_len - 1] = (crc >> 8) & 0xFF; // CRC高字节
-
-    // 打印调试信息
-    ESP_LOGI(TAG, "Sending packet: len=%d, payload_len=%d, CRC=0x%04X",
-             packet_len, payload_len, crc);
-    LOG_HEXDUMP_PRINT("Packet data:", packet, packet_len);
-
-    // 发送数据包
-    uart_write_bytes(UART_NUM, (const char*)packet, packet_len);
+    ESP_LOGI(TAG, "UART init finished!");
+    const uint8_t test_data1[] = {0x01, 0x02, 0x03, 0x04};
+    usart_send_payload(test_data1, sizeof(test_data1));
+    // 创建处理 UART 事件的任务
+    xTaskCreate(uart_receive_task, "uart_receive_task", 4096, NULL, 5, NULL);
+    // 创建处理任务
+    xTaskCreate(uart_process_task, "uart_process", 4096, NULL, 4, NULL);
+    // 创建发送任务
+    xTaskCreate(uart_tx_task, "uart_tx_task", 4096, NULL, 3, &uart_tx_task_handle);
+    ESP_LOGI(TAG, "uart_receive_task create finished!");
 }
 
+
+/**
+ * @brief 发送有效载荷数据（通过队列）
+ */
+void usart_send_payload(const uint8_t *payload, uint16_t payload_len)
+{
+    // 检查有效载荷长度是否合法
+    if (payload_len == 0 || payload_len > MAX_PAYLOAD_LEN) {
+        ESP_LOGE(TAG, "Invalid payload length: %d", payload_len);
+        return;
+    }
+
+    // 复制有效载荷到堆内存
+    uint8_t *payload_copy = (uint8_t *)malloc(payload_len);
+    if (!payload_copy) {
+        ESP_LOGE(TAG, "Failed to allocate memory for payload");
+        return;
+    }
+    memcpy(payload_copy, payload, payload_len);
+
+    // 创建发送包结构
+    uart_tx_packet_t tx_packet = {
+        .payload = payload_copy,
+        .payload_len = payload_len
+    };
+
+    // 检查队列空间
+    if (uxQueueSpacesAvailable(uart_tx_queue) == 0) {
+        ESP_LOGW(TAG, "UART TX queue full, payload dropped");
+        free(payload_copy);
+        return;
+    }
+
+    // 发送到队列
+    if (xQueueSend(uart_tx_queue, &tx_packet, pdMS_TO_TICKS(100)) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to send payload to UART TX queue");
+        free(payload_copy);
+    }
+}
 
 uint8_t usart_rev_analysis(uint8_t *data, uint16_t len)
 {
@@ -158,54 +272,57 @@ uint8_t usart_rev_analysis(uint8_t *data, uint16_t len)
         return 2;
     }
 
-    uint8_t error = CRC16_CCITT_CHECK(&data[4],len-4);
-    if(error == 1)	//校验正确
-    {
-        command_id = (data[4]<<8) + data[5];
-        ESP_LOGI(TAG, "rev 0xAA 0xAAcommand_id=%04x", command_id);
-        switch(command_id)
-        {
-            case 0x0001:
-                uart_tx_buf[0] = 0x00;
-                uart_tx_buf[1] = 0x01;
-                uart_tx_buf[2] = 0x01;
-                usart_send_packet(uart_tx_buf, 3);
-                esp_ble_gap_set_scan_params(&ble_scan_params);
-                esp_ble_gap_start_scanning(30); // 扫描30秒
-                break;
-            case 0x0002:
-                uart_tx_buf[0] = 0x00;
-                uart_tx_buf[1] = 0x01;
-                uart_tx_buf[2] = 0x02;
-                usart_send_packet(uart_tx_buf, 3);
-                break;
-            case 0x0003:
-                uart_tx_buf[0] = 0x00;
-                uart_tx_buf[1] = 0x01;
-                uart_tx_buf[2] = 0x03;
-                usart_send_packet(uart_tx_buf, 3);
-                break;
-            case 0x0004:
-                uart_tx_buf[0] = 0x00;
-                uart_tx_buf[1] = 0x01;
-                uart_tx_buf[2] = 0x04;
-                usart_send_packet(uart_tx_buf, 3);
-                break;
-            case 0x0005:
-                uart_tx_buf[0] = 0x00;
-                uart_tx_buf[1] = 0x01;
-                uart_tx_buf[2] = 0x05;
-                usart_send_packet(uart_tx_buf, 3);
-                break;
-            default:
-            break;
-        }
-    }
-    else	//校验失败
-    {
-        ESP_LOGI(TAG, "check error!");
+    // 校验CRC
+    if (!CRC16_CCITT_CHECK(&data[4], len - 4)) { // 排除包头和CRC
+        ESP_LOGE(TAG, "CRC check failed");
         return 3;
     }
+
+    // 提取命令ID
+    command_id = (data[4] << 8) | data[5];
+    ESP_LOGI(TAG, "Valid packet received: command_id=0x%04X", command_id);
+
+    // 准备响应数据
+    uint8_t response[4] = {
+        0x00,
+        0x01,
+        (command_id >> 8) & 0xFF,   //  命令ID
+        (command_id) & 0xFF        //  命令ID
+    };
+
+    // 发送响应   先封装进发送队列
+    usart_send_payload(response, sizeof(response));
+
+    // 处理命令
+    switch(command_id)
+    {
+        case 0x0001: // 开始扫描
+            esp_ble_gap_set_scan_params(&ble_scan_params);
+            esp_ble_gap_start_scanning(30);
+            ESP_LOGI(TAG, "BLE scanning started");
+            break;
+
+        case 0x0002: // 命令2
+            // 处理命令2
+            break;
+
+        case 0x0003: // 命令3
+            // 处理命令3
+            break;
+
+        case 0x0004: // 命令4
+            // 处理命令4
+            break;
+
+        case 0x0005: // 命令5
+            // 处理命令5
+            break;
+
+        default:
+            ESP_LOGW(TAG, "Unknown command: 0x%04X", command_id);
+            break;
+    }
+
     return 0;
 }
 

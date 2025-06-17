@@ -28,7 +28,7 @@ typedef struct
 extern Rev_uart_t Rev_uart;
 
 extern void usart_init(void);
-extern void usart_send_packet(const uint8_t *payload, uint16_t payload_len);
+extern void usart_send_payload(const uint8_t *payload, uint16_t payload_len);
 extern uint8_t usart_rev_analysis(uint8_t *data, uint16_t len);
 extern uint8_t CRC16_CCITT_CHECK(uint8_t *puchMsg, uint16_t usDataLen);
 extern uint16_t CRC16_CCITT(uint8_t *puchMsg, uint16_t usDataLen);

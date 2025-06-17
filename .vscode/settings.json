@@ -50,6 +50,7 @@
         "utility": "c",
         "sdkconfig.h": "c",
         "string": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "initializer_list": "c"
     }
 }
